@@ -5,7 +5,7 @@ from astropy.visualization import ZScaleInterval
 import pandas as pd
 import torch
 from tqdm import tqdm
-from eval_code.eval import *
+from eval import *
 
 # def _ZScoreNormalize(image: np.ndarray) -> np.ndarray:
 #     """
