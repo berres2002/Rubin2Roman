@@ -121,7 +121,9 @@ if __name__ == "__main__":
     with open(args.roman_wcs_json_path,'r') as f:
         roman_wcs_json = json.load(f)
         f.close()
-
+    # randomize dir_list to avoid any biases in the order of processing the data
+    np.random.seed(42069) # set seed for reproducibility
+    np.random.shuffle(dir_list)
     for dir in dir_list:
         rubin_glob = glob.glob(os.path.join(args.rubin_img_dir, f'{dir}/*.npy'))
         with open(glob.glob(os.path.join(args.rubin_img_dir, f'{dir}/*wcs*.json'))[0], 'r') as f:
