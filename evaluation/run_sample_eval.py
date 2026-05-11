@@ -88,6 +88,13 @@ if __name__ == "__main__":
         dd1['pred_HLR_J'].append(samp_hlr[1])
         dd1['pred_HLR_H'].append(samp_hlr[2])
         # TODO: Figure out radius for aperture photometry for flux measurement
-
+        # im_flux = get_aperture_fluxes(im_norm, im_cens[:,0], im_cens[:,1], radius=5)
+        # samp_flux = get_aperture_fluxes(out1, out_cens[:,0], out_cens[:,1], radius=5)
+        dd1['roman_flux_Y'].append(-999)
+        dd1['roman_flux_J'].append(-999)
+        dd1['roman_flux_H'].append(-999)
+        dd1['pred_flux_Y'].append(-999)
+        dd1['pred_flux_J'].append(-999)
+        dd1['pred_flux_H'].append(-999)
     data_out = pd.DataFrame(dd1)
     data_out.to_csv(f"{args.output_dir}/evaluation_results.csv", index=False)
