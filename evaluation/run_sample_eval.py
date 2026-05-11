@@ -21,6 +21,8 @@ from eval import *
 #     std = np.std(image, axis=(1, 2), keepdims=True)
 #     return (image - mean) / std
 
+COLUMNS = ['cutout_id', 'psnr', 'ssim','roman_flux_Y','roman_flux_J','roman_flux_H','pred_flux_Y','pred_flux_J','pred_flux_H','roman_HLR_Y','roman_HLR_J','roman_HLR_H','pred_HLR_Y','pred_HLR_J','pred_HLR_H','lsst_flux_u','lsst_flux_g','lsst_flux_r','lsst_flux_i','lsst_flux_z','lsst_flux_y']
+
 def init_argparse():
     import argparse
     parser = argparse.ArgumentParser(description="Evaluate the trained model on test data.")
@@ -34,6 +36,7 @@ def init_argparse():
 if __name__ == "__main__":
     args = init_argparse()
     # checkpoints_directory = '/work/hdd/bfpq/aberres2/checkpoints/demo_cond_10k'
+    dd1 = {col:[] for col in COLUMNS}
     checkpoints_directory = args.checkpoints_directory
     model = ScoreModel(checkpoints_directory=checkpoints_directory)
 
@@ -41,6 +44,7 @@ if __name__ == "__main__":
     df = pd.read_csv(args.test_csv)
 
     paths= df['path'].values
+    img_names = df['img'].values
     # randomize the order of the paths
     np.random.seed(42069)
     np.random.shuffle(paths)
@@ -51,6 +55,8 @@ if __name__ == "__main__":
     for i in tqdm(range(len(paths))):
         path = paths[i]
         img = np.load(path)
+        name = img_names[i].strip('.npy')
+        dd1['cutout_id'].append(name)
         fimg = ZScoreNormalize(img)
         nimg = fimg[:6] # First 6 channels as the conditioning image
         # duplicate to n_samples batches
@@ -60,10 +66,28 @@ if __name__ == "__main__":
         # cims = cims.unsqueeze(0)
         cims = cims.to(model.device)
 
-        samples=model.sample(shape=[400,3,64,64],steps=args.steps, condition=[cims])
+        samples=model.sample(shape=[args.n_samples,3,64,64],steps=args.steps, condition=[cims])
 
         full_samp = samples.cpu().numpy()
         s_median = np.median(full_samp, axis=0)
         # shape is (3, 64, 64) for the median image
         out1 = normalize_unit(s_median)
-        im_norm = normalize_unit(img[6:]) # Normalize the target image (last 3 channels)
+        im_norm = normalize_unit(nimg[6:]) # Normalize the target image (last 3 channels)
+        psnr_val = psnr(out1, im_norm)
+        dd1['psnr'].append(psnr_val)
+        ssim_val = struct_sim(out1, im_norm)
+        dd1['ssim'].append(ssim_val)
+        out_cens = GetCenterPeak(out1)
+        im_cens = GetCenterPeak(im_norm)
+        im_hlr = get_HLR(im_norm,im_cens[:,0],im_cens[:,1])
+        samp_hlr = get_HLR(out1,out_cens[:,0],out_cens[:,1])
+        dd1['roman_HLR_Y'].append(im_hlr[0])
+        dd1['roman_HLR_J'].append(im_hlr[1])
+        dd1['roman_HLR_H'].append(im_hlr[2])
+        dd1['pred_HLR_Y'].append(samp_hlr[0])
+        dd1['pred_HLR_J'].append(samp_hlr[1])
+        dd1['pred_HLR_H'].append(samp_hlr[2])
+        # TODO: Figure out radius for aperture photometry for flux measurement
+
+    data_out = pd.DataFrame(dd1)
+    data_out.to_csv(f"{args.output_dir}/evaluation_results.csv", index=False)
