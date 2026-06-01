@@ -6,6 +6,7 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 from eval import *
+import os
 
 # def _ZScoreNormalize(image: np.ndarray) -> np.ndarray:
 #     """
@@ -105,5 +106,6 @@ if __name__ == "__main__":
         dd1['pred_flux_J'].append(-999)
         dd1['pred_flux_H'].append(-999)
     data_out = pd.DataFrame(dd1)
+    os.makedirs(args.output_dir, exist_ok=True)
     data_out.to_csv(f"{args.output_dir}/evaluation_results.csv", index=False)
     print(f"Saved evaluation results to {args.output_dir}/evaluation_results.csv")
