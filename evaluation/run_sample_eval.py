@@ -55,7 +55,7 @@ if __name__ == "__main__":
     np.random.shuffle(paths)
 
     #TEST CASE
-    paths = paths[:1]
+    paths = paths[:50]
     print('Evaluating model on test data...')
     for i in tqdm(range(len(paths))):
         path = paths[i]
