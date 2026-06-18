@@ -131,3 +131,39 @@ def get_HLR(images, x, y):
     for ii in range(n):
         hlrs[ii] = _compute_halfLightR(images[ii], (x[ii], y[ii]))
     return hlrs
+
+def _match_segmentation(image, catalog):
+    cenx,ceny = _FindCenterPeak(image)
+    mdist = 0
+    for n in range(len(catalog)):
+        cat_x,cat_y = catalog[n]['x'], catalog[n]['y']
+        dist = np.sqrt((cat_x - cenx)**2 + (cat_y - ceny)**2)
+        if n == 0:
+            mdist = dist
+        else:
+            if dist < mdist:
+                mdist = dist
+                inds = n
+    return inds
+
+
+def _compute_segmentation(image):
+    """Perform segmentation on a single image."""
+    bkg = sep.Background(image)
+    catalog, segmentation = sep.extract(
+            image,
+            0.5,
+            err=bkg.globalrms,
+            segmentation_map=True,
+            minarea=5,
+        )
+    inds = _match_segmentation(image,catalog)
+    return segmentation[inds]
+
+def get_segmentation(images):
+    """Perform segmentation on each image in the batch."""
+    n, h, w = images.shape
+    segments = np.zeros((n, h, w), dtype=bool)
+    for ii in range(n):
+        segments[ii] = _compute_segmentation(images[ii])
+    return segments
