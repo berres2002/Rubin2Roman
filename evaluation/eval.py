@@ -140,6 +140,7 @@ def _match_segmentation(image, catalog):
         dist = np.sqrt((cat_x - cenx)**2 + (cat_y - ceny)**2)
         if n == 0:
             mdist = dist
+            inds = 0
         else:
             if dist < mdist:
                 mdist = dist
@@ -147,23 +148,48 @@ def _match_segmentation(image, catalog):
     return inds
 
 
-def _compute_segmentation(image):
+def _compute_segmentation(image,thresh,minarea):
     """Perform segmentation on a single image."""
     bkg = sep.Background(image)
     catalog, segmentation = sep.extract(
             image,
-            0.5,
+            thresh=thresh,
             err=bkg.globalrms,
             segmentation_map=True,
-            minarea=5,
+            minarea=minarea,
         )
     inds = _match_segmentation(image,catalog)
-    return segmentation[inds]
+    seg_i = segmentation == inds + 1
+    return seg_i
 
-def get_segmentation(images):
+def get_segmentation(images, thresh = 0.2, minarea=5):
     """Perform segmentation on each image in the batch."""
     n, h, w = images.shape
     segments = np.zeros((n, h, w), dtype=bool)
     for ii in range(n):
-        segments[ii] = _compute_segmentation(images[ii])
+        segments[ii] = _compute_segmentation(images[ii],thresh,minarea)
     return segments
+
+# taken from BTK segmentation eval
+def iou(seg1: np.ndarray, seg2: np.ndarray) -> np.ndarray:
+    """Calculates intersection-over-union (IoU) given two semgentation arrays.
+
+    This metric assumes that the input arrays are boolean. Otherwise the arrays are
+    casted to boolean arrays before the computation.
+
+    Args:
+        seg1: Array of shape `NHW` containing `N` segmentation maps each of
+                        size `HW`.
+        seg2: Array of shape `NHW` containing `N` segmentation maps each of
+                        size `HW`.
+
+    Returns:
+        Returns `iou` between each corresponding segmentation map as an array of shape `N`
+
+    """
+    assert not np.any(np.isnan(seg1)) and not np.any(np.isnan(seg2))
+    seg1 = seg1.astype(bool)
+    seg2 = seg2.astype(bool)
+    i = np.logical_and(seg1, seg2).sum(axis=(-1, -2))
+    u = np.logical_or(seg1, seg2).sum(axis=(-1, -2))
+    return i / u
