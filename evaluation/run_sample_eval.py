@@ -21,10 +21,24 @@ import os
 #     mean = np.mean(image, axis=(1, 2), keepdims=True)
 #     std = np.std(image, axis=(1, 2), keepdims=True)
 #     return (image - mean) / std
-
-COLUMNS = ['cutout_id', 'psnr_Y', 'psnr_J', 'psnr_H', 'ssim_Y', 'ssim_J', 'ssim_H','roman_flux_Y','roman_flux_J','roman_flux_H','pred_flux_Y','pred_flux_J','pred_flux_H','roman_HLR_Y','roman_HLR_J','roman_HLR_H','pred_HLR_Y','pred_HLR_J','pred_HLR_H',\
+#cols = ['semimajor_axis','semiminor_axis','orientation','ellipticity','kron_flux']
+def columns_constructor():
+    bands = ['Y', 'J', 'H']
+    comps = ['psnr','ssim']
+    mfeat = ['flux','HLR','semimajor_axis','semiminor_axis','orientation','ellipticity','kron_flux']
+    start = ['cutout_id']
+    for i in range(len(bands)):
+        for j in range(len(comps)):
+            start.append(f"{comps[j]}_{bands[i]}")
+        for jj in range(len(mfeat)):
+            start.append(f"roman_{mfeat[jj]}_{bands[i]}")
+            start.append(f"pred_{mfeat[jj]}_{bands[i]}")
+    return start
+# COLUMNS = ['cutout_id', 'psnr_Y', 'psnr_J', 'psnr_H', 'ssim_Y', 'ssim_J', 'ssim_H','roman_flux_Y','roman_flux_J','roman_flux_H','pred_flux_Y','pred_flux_J','pred_flux_H','roman_HLR_Y','roman_HLR_J','roman_HLR_H','pred_HLR_Y','pred_HLR_J','pred_HLR_H',\
+        #    'roman_a_Y', 'roman_a_J', 'roman_a_H', 'roman_b_Y', 'roman_b_J', 'roman_b_H',
         #    'lsst_flux_u','lsst_flux_g','lsst_flux_r','lsst_flux_i','lsst_flux_z','lsst_flux_y'\
-           ]
+        #    ]
+COLUMNS = columns_constructor()
 
 def init_argparse():
     import argparse
@@ -106,6 +120,14 @@ if __name__ == "__main__":
         dd1['pred_flux_Y'].append(samp_flux[0])
         dd1['pred_flux_J'].append(samp_flux[1])
         dd1['pred_flux_H'].append(samp_flux[2])
+        pred_morph = get_morph(out1)
+        roman_morph = get_morph(im_norm)
+        cols = pred_morph.keys()
+        bands = ['Y','J','H']
+        for j in range(len(bands)):
+            for k in range(len(cols)):
+                dd1[f'pred_{cols[k]}_{bands[j]}'].append(pred_morph[j][cols[k]].value)
+                dd1[f'roman_{cols[k]}_{bands[j]}'].append(roman_morph[j][cols[k]].value)
     data_out = pd.DataFrame(dd1)
     os.makedirs(args.output_dir, exist_ok=True)
     data_out.to_csv(f"{args.output_dir}/evaluation_results.csv", index=False)

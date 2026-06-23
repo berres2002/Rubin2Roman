@@ -3,6 +3,9 @@ from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 import sep
 from photutils.profiles import CurveOfGrowth
 from photutils.centroids import centroid_2dg
+from photutils.morphology import data_properties
+from astropy.table import vstack
+
 
 def _FindCenterPeak(image):
     cenxy = centroid_2dg(image)
@@ -162,7 +165,7 @@ def _compute_segmentation(image,thresh,minarea):
     seg_i = segmentation == inds + 1
     return seg_i
 
-def get_segmentation(images, thresh = 0.2, minarea=5):
+def get_segmentation(images, thresh = 5, minarea=5):
     """Perform segmentation on each image in the batch."""
     n, h, w = images.shape
     segments = np.zeros((n, h, w), dtype=bool)
@@ -193,3 +196,21 @@ def iou(seg1: np.ndarray, seg2: np.ndarray) -> np.ndarray:
     i = np.logical_and(seg1, seg2).sum(axis=(-1, -2))
     u = np.logical_or(seg1, seg2).sum(axis=(-1, -2))
     return i / u
+
+def get_morph(images, use_seg=True):
+    cols = ['semimajor_axis','semiminor_axis','orientation','ellipticity','kron_flux']
+    # t1 = QTable(names= cols)
+    n, h, w = images.shape
+    t1 = None
+    for i in range(n):
+        if use_seg:
+            segs = get_segmentation(np.array([images[i]]))
+            dp = data_properties(images[i],mask=~segs[0])
+        else:
+            dp = data_properties(images[i])
+        tbl = dp.to_table(columns=cols)
+        if t1 is not None:
+            t1 = vstack([t1,tbl],join_type='exact')
+        else:
+            t1 = tbl
+    return t1
