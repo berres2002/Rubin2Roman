@@ -48,6 +48,7 @@ def init_argparse():
     parser.add_argument('--output_dir', type=str, required=True, help='Directory to save evaluation outputs.')
     parser.add_argument('--n_samples', type=int, default=400, help='Number of samples to generate for each test image.')
     parser.add_argument('--steps', type=int, default=1000, help='Number of diffusion steps for sampling.')
+    parser.add_argument('--n_test',type=int,default=50,help='Number of test galaxies to use. Can use up to the full size of the test set.')
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -69,7 +70,8 @@ if __name__ == "__main__":
     np.random.shuffle(paths)
 
     #TEST CASE
-    paths = paths[:50]
+    if args.n_test < paths.size:
+        paths = paths[:args.n_test]
     print('Evaluating model on test data...')
     for i in tqdm(range(len(paths))):
         path = paths[i]
