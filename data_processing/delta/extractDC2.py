@@ -110,6 +110,7 @@ def init_argparse():
     parser.add_argument('--output', type=str, help='Directory where the extracted cutouts and annotations will be saved.')
     # parser.add_argument('--dir_list_path', type=str, default='dir_list.pkl', help='Path to the pickle file containing the list of directories to process.')
     parser.add_argument('--roman_wcs_json_path', type=str, default='/projects/bfhm/yse2/annotations_roman/all_wcs.json', help='Path to the JSON file containing WCS information for the Roman data.')
+    parser.add_argument('--n_test',default=None)
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -124,6 +125,7 @@ if __name__ == "__main__":
     # randomize dir_list to avoid any biases in the order of processing the data
     np.random.seed(42069) # set seed for reproducibility
     np.random.shuffle(dir_list)
+    count = 0
     for dir in dir_list:
         rubin_glob = glob.glob(os.path.join(args.rubin_img_dir, f'{dir}/*.npy'))
         with open(glob.glob(os.path.join(args.rubin_img_dir, f'{dir}/*wcs*.json'))[0], 'r') as f:
@@ -163,12 +165,17 @@ if __name__ == "__main__":
                             np.save(path, cutout_data.astype(np.float32))
                             annots['path'].append(path)
                             annots['img'].append(cutout_fname)
+                            count +=1
+                            if args.n_test is not None and count >= args.n_test:
+                                break
             else:
                 annots['roman_path'].append(roman_fname)
                 annots['roman_img'].append(roman_fname.split('/')[-1])
                 annots['rubin_path'].append(rubin_fname)
                 annots['rubin_img'].append(rubin_fname.split('/')[-1])
+
     annotations = pd.DataFrame(annots)
+    os.makedirs(args.output,exist_ok=False)
     ann_path =os.path.join(args.output, 'annotations.csv')
     annotations.to_csv(ann_path, index=False)
     print(f"Annotations saved to {ann_path}")
