@@ -45,7 +45,7 @@ def get_roman_coadd(fname, wcs_json):
 
 def get_rubin_coadd(fname, wcs_json):
     coadd_rubin = np.load(fname)
-    fs = fname.split('_')[-3]
+    fs = fname.split('/')[-1].split('_')[0]
     try:
         wcs_rubin = _get_rubin_wcs(fs, wcs_json)
     except:
