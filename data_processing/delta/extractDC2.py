@@ -154,7 +154,7 @@ if __name__ == "__main__":
                 rubin_b, rubin_h, rubin_w = coadd_rubin.shape
                 big_array = np.zeros((b+rubin_b, h, w))
                 big_array[rubin_b:]=coadd_roman
-                big_array[:rubin_b]=reproject_rubin_to_roman(coadd_rubin, wcs_rubin, wcs_roman, coadd_roman[0])
+                big_array[:rubin_b],_=reproject_rubin_to_roman(coadd_rubin, wcs_rubin, wcs_roman, coadd_roman[0])
                 # TODO: write cutouts centered on table sources function
                 truth_json_path = 'truth_'+rubin_fname.strip('.npy').split('/')[-1]+'.json'
                 truth_json_path = os.path.join(args.rubin_img_dir, dir, truth_json_path)
@@ -162,7 +162,7 @@ if __name__ == "__main__":
                     objs = get_objects_from_json(truth_json_path)
                     for i in range(len(objs['id'])):
                         cutout_data, cutout_wcs = make_cutout(big_array, wcs_roman, pos_radec=(objs['ra'][i], objs['dec'][i]), cutout_size=args.cutout_size)
-                        if cutout_data is not None:
+                        if cutout_data is not None and np.isnan(cutout_data[0].min())==False:
                             cutout_fname = f"{rubin_fname.strip('.npy').split('/')[-1]}_cut_{objs['id'][i]}.npy"
                             path = os.path.join(args.output, 'data', cutout_fname)
                             np.save(path, cutout_data.astype(np.float32))
