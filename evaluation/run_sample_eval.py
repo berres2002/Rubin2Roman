@@ -128,8 +128,8 @@ if __name__ == "__main__":
         bands = ['Y','J','H']
         for j in range(len(bands)):
             for k in range(len(cols)):
-                dd1[f'pred_{cols[k]}_{bands[j]}'].append(pred_morph[j][cols[k]].value)
-                dd1[f'roman_{cols[k]}_{bands[j]}'].append(roman_morph[j][cols[k]].value)
+                dd1[f'pred_{cols[k]}_{bands[j]}'].append(np.float64(pred_morph[j][cols[k]]))
+                dd1[f'roman_{cols[k]}_{bands[j]}'].append(np.float64(roman_morph[j][cols[k]]))
     data_out = pd.DataFrame(dd1)
     os.makedirs(args.output_dir, exist_ok=True)
     data_out.to_csv(f"{args.output_dir}/evaluation_results.csv", index=False)
