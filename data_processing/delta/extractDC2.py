@@ -53,7 +53,7 @@ def get_rubin_coadd(fname, wcs_json):
     return coadd_rubin, wcs_rubin
 
 def reproject_rubin_to_roman(rubin_ims, wcs_rubin, wcs_roman, coadd_roman):
-    return reproject_interp((rubin_ims,wcs_rubin),wcs_roman,shape_out=coadd_roman['data'].shape)
+    return reproject_interp((rubin_ims,wcs_rubin),wcs_roman,shape_out=coadd_roman.shape)
 
 def get_objects_from_json(path):
     objs = {'id':[], 'ra':[], 'dec':[]}
