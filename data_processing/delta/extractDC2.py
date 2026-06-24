@@ -131,12 +131,14 @@ if __name__ == "__main__":
     count = 0
     break_stop = False
     for dir in dir_list:
+        if break_stop: break
         rubin_glob = glob.glob(os.path.join(args.rubin_img_dir, f'{dir}/*.npy'))
         with open(glob.glob(os.path.join(args.rubin_img_dir, f'{dir}/*wcs*.json'))[0], 'r') as f:
             rubin_wcs_json = json.load(f)
             f.close()
         # roman_glob = []
         for rubin_fname in rubin_glob:
+            if break_stop: break
             # roman_glob.append(os.path.join(f'/work/hdd/bdsp/yse2/truth-roman/{dir}', rubin_fname.split('/')[-1]))
             roman_fname = os.path.join(args.roman_img_dir, dir, rubin_fname.split('/')[-1])
             if os.path.exists(roman_fname):
@@ -162,6 +164,7 @@ if __name__ == "__main__":
                 if os.path.exists(truth_json_path):
                     objs = get_objects_from_json(truth_json_path)
                     for i in range(len(objs['id'])):
+                        if break_stop: break
                         cutout_data, cutout_wcs = make_cutout(big_array, wcs_roman, pos_radec=(objs['ra'][i], objs['dec'][i]), cutout_size=args.cutout_size)
                         if cutout_data is not None and np.isnan(cutout_data[0].min())==False:
                             cutout_fname = f"{rubin_fname.strip('.npy').split('/')[-1]}_cut_{objs['id'][i]}.npy"
@@ -174,14 +177,13 @@ if __name__ == "__main__":
                                 break_stop = True
                                 print(f"n_test limit ({args.n_test}) has been reached, stopping now.")
                                 break
-                    if break_stop: break
+
                     
             else:
                 annots['roman_path'].append(roman_fname)
                 annots['roman_img'].append(roman_fname.split('/')[-1])
                 annots['rubin_path'].append(rubin_fname)
                 annots['rubin_img'].append(rubin_fname.split('/')[-1])
-            if break_stop: break
 
     annotations = pd.DataFrame(annots)
     
