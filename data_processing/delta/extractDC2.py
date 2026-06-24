@@ -170,8 +170,11 @@ if __name__ == "__main__":
                             annots['img'].append(cutout_fname)
                             count +=1
                             if args.n_test is not None and count >= args.n_test:
-                                print(f'n_test ({args.n_test}) has been reached, stopping loop')
+                                
                                 break
+                    if args.n_test is not None and count >= args.n_test:
+                        print(f'n_test ({args.n_test}) has been reached, stopping loop')
+                        break
             else:
                 annots['roman_path'].append(roman_fname)
                 annots['roman_img'].append(roman_fname.split('/')[-1])
@@ -182,6 +185,6 @@ if __name__ == "__main__":
     
     ann_path =os.path.join(args.output, 'annotations.csv')
     annotations.to_csv(ann_path, index=False)
-    print(f"Annotations saved to {ann_path}")
+    print(f"Annotations with length {len(annotations)} saved to {ann_path}")
     # fpath = ''
 
