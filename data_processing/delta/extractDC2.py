@@ -129,6 +129,7 @@ if __name__ == "__main__":
     np.random.seed(42069) # set seed for reproducibility
     np.random.shuffle(dir_list)
     count = 0
+    break_stop = False
     for dir in dir_list:
         rubin_glob = glob.glob(os.path.join(args.rubin_img_dir, f'{dir}/*.npy'))
         with open(glob.glob(os.path.join(args.rubin_img_dir, f'{dir}/*wcs*.json'))[0], 'r') as f:
@@ -170,16 +171,17 @@ if __name__ == "__main__":
                             annots['img'].append(cutout_fname)
                             count +=1
                             if args.n_test is not None and count >= args.n_test:
-                                
+                                break_stop = True
+                                print(f"n_test limit ({args.n_test}) has been reached, stopping now.")
                                 break
-                    if args.n_test is not None and count >= args.n_test:
-                        print(f'n_test ({args.n_test}) has been reached, stopping loop')
-                        break
+                    if break_stop: break
+                    
             else:
                 annots['roman_path'].append(roman_fname)
                 annots['roman_img'].append(roman_fname.split('/')[-1])
                 annots['rubin_path'].append(rubin_fname)
                 annots['rubin_img'].append(rubin_fname.split('/')[-1])
+            if break_stop: break
 
     annotations = pd.DataFrame(annots)
     
