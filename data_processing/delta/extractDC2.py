@@ -115,6 +115,9 @@ def init_argparse():
 
 if __name__ == "__main__":
     args = init_argparse()
+    os.makedirs(args.output,exist_ok=True)
+    if args.make_cutouts:
+        os.makedirs(os.path.join(args.output,'data'),exist_ok=True)
     annots = {'path':[], 'img':[]}
     with open('/projects/bfpq/rubin2roman/code/Rubin2Roman/data_processing/delta/dir_list.pkl', 'rb') as f:
         dir_list = pickle.load(f)
@@ -175,7 +178,7 @@ if __name__ == "__main__":
                 annots['rubin_img'].append(rubin_fname.split('/')[-1])
 
     annotations = pd.DataFrame(annots)
-    os.makedirs(args.output,exist_ok=False)
+    
     ann_path =os.path.join(args.output, 'annotations.csv')
     annotations.to_csv(ann_path, index=False)
     print(f"Annotations saved to {ann_path}")
