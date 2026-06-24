@@ -154,7 +154,7 @@ if __name__ == "__main__":
                 rubin_b, rubin_h, rubin_w = coadd_rubin.shape
                 big_array = np.zeros((b+rubin_b, h, w))
                 big_array[rubin_b:]=coadd_roman
-                big_array[:rubin_b]=reproject_rubin_to_roman(coadd_rubin, wcs_rubin, wcs_roman, coadd_roman)
+                big_array[:rubin_b]=reproject_rubin_to_roman(coadd_rubin, wcs_rubin, wcs_roman, coadd_roman[0])
                 # TODO: write cutouts centered on table sources function
                 truth_json_path = 'truth_'+rubin_fname.strip('.npy').split('/')[-1]+'.json'
                 truth_json_path = os.path.join(args.rubin_img_dir, dir, truth_json_path)
