@@ -116,7 +116,7 @@ def init_argparse():
 if __name__ == "__main__":
     args = init_argparse()
     annots = {'path':[], 'img':[]}
-    with open('dir_list.pkl', 'rb') as f:
+    with open('/projects/bfpq/rubin2roman/code/Rubin2Roman/data_processing/delta/dir_list.pkl', 'rb') as f:
         dir_list = pickle.load(f)
         f.close()
     with open(args.roman_wcs_json_path,'r') as f:
