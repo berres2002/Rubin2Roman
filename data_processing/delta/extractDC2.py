@@ -87,7 +87,7 @@ def make_cutout(img, wcs, pos_xy=None, pos_radec=None, cutout_size=64):
     else:
         raise ValueError("Please specify either pixel coordinates (pos_xy) or world coordinates (pos_radec) for the cutout center.")
     try:
-        cutout = Cutout2D(img[0], sc1, (cutout_size, cutout_size), wcs=wcs)
+        cutout = Cutout2D(img[0], sc1, (cutout_size, cutout_size), wcs=wcs, mode='strict')
         cutout_slices = cutout.slices_original
         cutout_wcs = cutout.wcs
     except:
