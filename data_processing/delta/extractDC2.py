@@ -146,7 +146,7 @@ if __name__ == "__main__":
             if args.make_cutouts:
                 coadd_rubin, wcs_rubin = get_rubin_coadd(rubin_fname, rubin_wcs_json)
                 coadd_roman, wcs_roman = get_roman_coadd(roman_fname, roman_wcs_json)
-                if coadd_rubin == 1 or coadd_roman == 1:
+                if isinstance(coadd_rubin, int) or isinstance(coadd_roman, int):
                     print(f"Could not get WCS for Rubin or Roman coadd for file {rubin_fname}. Skipping this file.")
                     continue
                 # TODO: add in cutout making and saving here
@@ -170,6 +170,7 @@ if __name__ == "__main__":
                             annots['img'].append(cutout_fname)
                             count +=1
                             if args.n_test is not None and count >= args.n_test:
+                                print(f'n_test ({args.n_test}) has been reached, stopping loop')
                                 break
             else:
                 annots['roman_path'].append(roman_fname)
