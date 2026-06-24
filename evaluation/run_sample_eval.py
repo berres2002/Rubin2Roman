@@ -87,7 +87,7 @@ if __name__ == "__main__":
         # cims = cims.unsqueeze(0)
         cims = cims.to(model.device)
 
-        samples=model.sample(shape=[args.n_samples,3,64,64],steps=args.steps, condition=[cims])
+        samples=model.sample(shape=[args.n_samples,3,64,64],steps=args.steps, condition=[cims], verbose=0)
 
         full_samp = samples.cpu().numpy()
         s_median = np.median(full_samp, axis=0)
