@@ -110,7 +110,7 @@ def init_argparse():
     parser.add_argument('--output', type=str, help='Directory where the extracted cutouts and annotations will be saved.')
     # parser.add_argument('--dir_list_path', type=str, default='dir_list.pkl', help='Path to the pickle file containing the list of directories to process.')
     parser.add_argument('--roman_wcs_json_path', type=str, default='/projects/bfhm/yse2/annotations_roman/all_wcs.json', help='Path to the JSON file containing WCS information for the Roman data.')
-    parser.add_argument('--n_test',default=None)
+    parser.add_argument('--n_test',type=int,default=None)
     return parser.parse_args()
 
 if __name__ == "__main__":
