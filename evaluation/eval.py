@@ -137,7 +137,8 @@ def get_HLR(images, x, y):
     return hlrs
 
 def _match_segmentation(image, catalog):
-    cenx,ceny = _FindCenterPeak(image)
+    cenxy = _FindCenterPeak(image)
+    cenx,ceny = cenxy[0][0],cenxy[0][1]
     mdist = 0
     for n in range(len(catalog)):
         cat_x,cat_y = catalog[n]['x'], catalog[n]['y']
