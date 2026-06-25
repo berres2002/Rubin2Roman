@@ -101,8 +101,8 @@ if __name__ == "__main__":
             print('Normalization produced inf values. Skipping.')
             continue
         # save some of the model outputs REMOVE WHEN NOT TESTING
-        np.save(f'/work/hdd/bfpq/aberres2/test_eval_imgs/pred_{i}.npy',out1)
-        np.save(f'/work/hdd/bfpq/aberres2/test_eval_imgs/roman_{i}.npy',im_norm)
+        # np.save(f'/work/hdd/bfpq/aberres2/test_eval_imgs/pred_{i}.npy',out1)
+        # np.save(f'/work/hdd/bfpq/aberres2/test_eval_imgs/roman_{i}.npy',im_norm)
         psnr_val = psnr(out1, im_norm)
         dd1['psnr_Y'].append(psnr_val[0])
         dd1['psnr_J'].append(psnr_val[1])
