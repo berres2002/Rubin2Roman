@@ -113,8 +113,9 @@ if __name__ == "__main__":
         dd1['ssim_H'].append(ssim_val[2])
         out_cens = GetCenterPeak(out1)
         im_cens = GetCenterPeak(im_norm)
-        im_hlr = get_HLR(im_norm,im_cens[:,0],im_cens[:,1])
-        samp_hlr = get_HLR(out1,out_cens[:,0],out_cens[:,1])
+        # peak_local_max is index coordinates so x and y are reversed
+        im_hlr = get_HLR(im_norm,im_cens[:,1],im_cens[:,0])
+        samp_hlr = get_HLR(out1,out_cens[:,1],out_cens[:,0])
         dd1['roman_HLR_Y'].append(im_hlr[0])
         dd1['roman_HLR_J'].append(im_hlr[1])
         dd1['roman_HLR_H'].append(im_hlr[2])
