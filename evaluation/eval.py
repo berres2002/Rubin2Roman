@@ -2,13 +2,14 @@ import numpy as np
 from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 import sep
 from photutils.profiles import CurveOfGrowth
-from photutils.centroids import centroid_2dg
+# from photutils.centroids import centroid_2dg
+from skimage.feature import peak_local_max
 from photutils.morphology import data_properties
 from astropy.table import vstack
 
 
 def _FindCenterPeak(image):
-    cenxy = centroid_2dg(image)
+    cenxy = peak_local_max(image,threshold_abs=0.5,num_peaks=1,exclude_border=10)
     return cenxy
 
 def GetCenterPeak(images):
