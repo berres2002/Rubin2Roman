@@ -9,7 +9,7 @@ from astropy.table import vstack
 
 
 def _FindCenterPeak(image):
-    cenxy = peak_local_max(image,threshold_abs=0.5,num_peaks=1,exclude_border=10)
+    cenxy = peak_local_max(image,threshold_abs=0.2,num_peaks=1,exclude_border=10)
     return cenxy
 
 def GetCenterPeak(images):
