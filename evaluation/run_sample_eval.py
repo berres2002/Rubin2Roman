@@ -91,6 +91,9 @@ if __name__ == "__main__":
 
         full_samp = samples.cpu().numpy()
         s_median = np.median(full_samp, axis=0)
+        if s_median.max() == 0.0 or np.isnan(s_median.max()) or np.sum(s_median) == 0.0 or np.isnan(np.sum(s_median)):
+            print('Model produced empty or nan valued images')
+            continue
         # shape is (3, 64, 64) for the median image
         out1 = normalize_unit(s_median)
         im_norm = normalize_unit(fimg[6:]) # Normalize the target image (last 3 channels)
