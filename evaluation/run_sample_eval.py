@@ -97,6 +97,9 @@ if __name__ == "__main__":
         # shape is (3, 64, 64) for the median image
         out1 = normalize_unit(s_median)
         im_norm = normalize_unit(fimg[6:]) # Normalize the target image (last 3 channels)
+        if abs(out1).max() == np.inf or abs(im_norm).max() == np.inf:
+            print('Normalization produced inf values. Skipping.')
+            continue
         psnr_val = psnr(out1, im_norm)
         dd1['psnr_Y'].append(psnr_val[0])
         dd1['psnr_J'].append(psnr_val[1])
