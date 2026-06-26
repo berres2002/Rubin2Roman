@@ -140,6 +140,7 @@ def _match_segmentation(image, catalog):
     cenxy = _FindCenterPeak(image)
     cenx,ceny = cenxy[0][0],cenxy[0][1]
     mdist = 0
+    inds = 0
     for n in range(len(catalog)):
         cat_x,cat_y = catalog[n]['x'], catalog[n]['y']
         dist = np.sqrt((cat_x - cenx)**2 + (cat_y - ceny)**2)
