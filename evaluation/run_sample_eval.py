@@ -72,6 +72,7 @@ if __name__ == "__main__":
     #TEST CASE
     if args.n_test < paths.size:
         paths = paths[:args.n_test]
+    fail_counter = 0
     print('Evaluating model on test data...')
     for i in tqdm(range(len(paths))):
         path = paths[i]
@@ -100,6 +101,24 @@ if __name__ == "__main__":
         if abs(out1).max() == np.inf or abs(im_norm).max() == np.inf:
             print('Normalization produced inf values. Skipping.')
             continue
+        try:
+            out_cens = GetCenterPeak(out1)
+        except:
+            print('Peak finding algorithm failed for predicted source. Skipping...')
+            fail_counter+=1
+            save_path = f"/work/hdd/bfpq/aberres2/failed_eval_ims/test1/pred_fail{fail_counter}.npy"
+            print(f'Saving images as {save_path}')
+            np.save(save_path,np.vstack((out1,im_norm)))
+            continue
+        try:
+            im_cens = GetCenterPeak(im_norm)
+        except:
+            print('Peak finding algorithm failed for Roman source. Skipping...')
+            fail_counter+=1
+            save_path = f"/work/hdd/bfpq/aberres2/failed_eval_ims/test1/roman_fail{fail_counter}.npy"
+            print(f'Saving images as {save_path}')
+            np.save(save_path,np.vstack((out1,im_norm)))
+            continue
         # save some of the model outputs REMOVE WHEN NOT TESTING
         # np.save(f'/work/hdd/bfpq/aberres2/test_eval_imgs/pred_{i}.npy',out1)
         # np.save(f'/work/hdd/bfpq/aberres2/test_eval_imgs/roman_{i}.npy',im_norm)
@@ -111,8 +130,6 @@ if __name__ == "__main__":
         dd1['ssim_Y'].append(ssim_val[0])
         dd1['ssim_J'].append(ssim_val[1])
         dd1['ssim_H'].append(ssim_val[2])
-        out_cens = GetCenterPeak(out1)
-        im_cens = GetCenterPeak(im_norm)
         # peak_local_max is index coordinates so x and y are reversed
         im_hlr = get_HLR(im_norm,im_cens[:,1],im_cens[:,0])
         samp_hlr = get_HLR(out1,out_cens[:,1],out_cens[:,0])
