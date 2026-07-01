@@ -99,8 +99,8 @@ if __name__ == "__main__":
         # out1 = normalize_unit(s_median)
         # im_norm = normalize_unit(fimg[6:]) # Normalize the target image (last 3 channels)
         # Trying to use center normalization instead of unit normalization for both the predicted and target images
-        out1 = normalize_center(s_median)
-        im_norm = normalize_center(fimg[6:]) # Normalize the target image (last 3 channels)
+        # out1 = normalize_center(s_median)
+        # im_norm = normalize_center(fimg[6:]) # Normalize the target image (last 3 channels)
         if abs(out1).max() == np.inf or abs(im_norm).max() == np.inf:
             print('Normalization produced inf values. Skipping.')
             continue
@@ -122,6 +122,16 @@ if __name__ == "__main__":
             print(f'Saving images as {save_path}')
             np.save(save_path,np.vstack((out1,im_norm)))
             continue
+        pred_morph = get_morph(out1)
+        roman_morph = get_morph(im_norm)
+        cols = pred_morph.keys()
+        bands = ['Y','J','H']
+        for j in range(len(bands)):
+            for k in range(len(cols)):
+                dd1[f'pred_{cols[k]}_{bands[j]}'].append(np.float64(pred_morph[j][cols[k]]))
+                dd1[f'roman_{cols[k]}_{bands[j]}'].append(np.float64(roman_morph[j][cols[k]]))
+        out1 = normalize_unit(s_median)
+        im_norm = normalize_unit(fimg[6:]) # Normalize the target image (last 3 channels)
         # save some of the model outputs REMOVE WHEN NOT TESTING
         # np.save(f'/work/hdd/bfpq/aberres2/test_eval_imgs/pred_{i}.npy',out1)
         # np.save(f'/work/hdd/bfpq/aberres2/test_eval_imgs/roman_{i}.npy',im_norm)
@@ -152,14 +162,7 @@ if __name__ == "__main__":
         dd1['pred_flux_Y'].append(samp_flux[0])
         dd1['pred_flux_J'].append(samp_flux[1])
         dd1['pred_flux_H'].append(samp_flux[2])
-        pred_morph = get_morph(out1)
-        roman_morph = get_morph(im_norm)
-        cols = pred_morph.keys()
-        bands = ['Y','J','H']
-        for j in range(len(bands)):
-            for k in range(len(cols)):
-                dd1[f'pred_{cols[k]}_{bands[j]}'].append(np.float64(pred_morph[j][cols[k]]))
-                dd1[f'roman_{cols[k]}_{bands[j]}'].append(np.float64(roman_morph[j][cols[k]]))
+        
     data_out = pd.DataFrame(dd1)
     os.makedirs(args.output_dir, exist_ok=True)
     data_out.to_csv(f"{args.output_dir}/evaluation_results.csv", index=False)
