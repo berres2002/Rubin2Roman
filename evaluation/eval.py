@@ -183,7 +183,7 @@ def _compute_segmentation(image,thresh,minarea):
     seg_i = segmentation == inds + 1
     return seg_i
 
-def get_segmentation(images, thresh = 3, minarea=5):
+def get_segmentation(images, thresh = 1.5, minarea=5):
     """Perform segmentation on each image in the batch."""
     n, h, w = images.shape
     segments = np.zeros((n, h, w), dtype=bool)
