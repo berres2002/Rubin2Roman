@@ -35,7 +35,8 @@ def normalize_center(image, center = 36):
     imagecen = np.zeros((n,center,center))
     for i in range(n):
         imagecen[i] = image[i][math.ceil(h/2)-math.ceil(center/2):math.ceil(h/2)+math.ceil(center/2),math.ceil(w/2)-math.ceil(center/2):math.ceil(w/2)+math.ceil(center/2)]
-    im_norm = abs(imagecen.min(axis=(1,2), keepdims=True)) + image
+    # im_norm = abs(imagecen.min(axis=(1,2), keepdims=True)) + image
+    im_norm = abs(image.min(axis=(1,2), keepdims=True)) + image
     im_norm = im_norm / imagecen.max(axis=(1,2), keepdims=True)
     return np.where(im_norm<1,im_norm,1) # limit any values above 1 to be set at the maximum which is 1
 
