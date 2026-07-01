@@ -102,6 +102,7 @@ if __name__ == "__main__":
         # out1 = normalize_center(s_median)
         # im_norm = normalize_center(fimg[6:]) # Normalize the target image (last 3 channels)
         out1 = s_median
+        im_norm = fimg[6:]
         if abs(out1).max() == np.inf or abs(im_norm).max() == np.inf:
             print('Normalization produced inf values. Skipping.')
             continue
