@@ -1,4 +1,5 @@
 import numpy as np
+import math
 from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 import sep
 from photutils.profiles import CurveOfGrowth
@@ -24,6 +25,19 @@ def normalize_unit(image):
     im_norm = abs(image.min(axis=(1,2), keepdims=True)) + image
     im_norm = im_norm / im_norm.max(axis=(1,2), keepdims=True)
     return im_norm
+
+def normalize_center(image, center = 35):
+    """
+    Normalize the input image to be between 0 and 1, using the center of the image as the reference point.
+    The center of the image is defined as a square region of size `center x center`. Values above 1 are limited to 1. This function is useful for images where the center region is of interest and should be used as the reference for normalization.
+    """
+    n,h,w = image.shape
+    imagecen = np.zeros((n,center,center))
+    for i in range(n):
+        imagecen[i] = image[i][math.ceil(h/2)-math.ceil(center/2):math.ceil(h/2)+math.ceil(center/2),math.ceil(w/2)-math.ceil(center/2):math.ceil(w/2)+math.ceil(center/2)]
+    im_norm = abs(imagecen.min(axis=(1,2), keepdims=True)) + image
+    im_norm = im_norm / imagecen.max(axis=(1,2), keepdims=True)
+    return np.where(im_norm<1,im_norm,1) # limit any values above 1 to be set at the maximum which is 1
 
 def ZScoreNormalize(image: np.ndarray) -> np.ndarray:
     """
