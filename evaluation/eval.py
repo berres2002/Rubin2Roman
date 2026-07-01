@@ -26,7 +26,7 @@ def normalize_unit(image):
     im_norm = im_norm / im_norm.max(axis=(1,2), keepdims=True)
     return im_norm
 
-def normalize_center(image, center = 35):
+def normalize_center(image, center = 36):
     """
     Normalize the input image to be between 0 and 1, using the center of the image as the reference point.
     The center of the image is defined as a square region of size `center x center`. Values above 1 are limited to 1. This function is useful for images where the center region is of interest and should be used as the reference for normalization.
