@@ -7,6 +7,7 @@ import torch
 from tqdm import tqdm
 from eval import *
 import os
+from datetime import datetime
 
 # def _ZScoreNormalize(image: np.ndarray) -> np.ndarray:
 #     """
@@ -52,6 +53,7 @@ def init_argparse():
     return parser.parse_args()
 
 if __name__ == "__main__":
+    dt1 = datetime.now()
     args = init_argparse()
     # checkpoints_directory = '/work/hdd/bfpq/aberres2/checkpoints/demo_cond_10k'
     dd1 = {col:[] for col in COLUMNS}
@@ -78,7 +80,7 @@ if __name__ == "__main__":
         path = paths[i]
         img = np.load(path)
         name = path.split('/')[-1].strip('.npy')
-        dd1['cutout_id'].append(name)
+        
         fimg = ZScoreNormalize(img)
         nimg = fimg[:6] # First 6 channels as the conditioning image
         # duplicate to n_samples batches
@@ -124,6 +126,7 @@ if __name__ == "__main__":
             print(f'Saving images as {save_path}')
             np.save(save_path,np.vstack((out1,im_norm)))
             continue
+        dd1['cutout_id'].append(name)
         pred_morph = get_morph(out1)
         roman_morph = get_morph(im_norm)
         cols = pred_morph.keys()
@@ -169,3 +172,5 @@ if __name__ == "__main__":
     os.makedirs(args.output_dir, exist_ok=True)
     data_out.to_csv(f"{args.output_dir}/evaluation_results.csv", index=False)
     print(f"Saved evaluation results to {args.output_dir}/evaluation_results.csv")
+    td =datetime.now()-dt1
+    print('This evaluation took',td)
