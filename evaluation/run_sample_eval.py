@@ -113,7 +113,7 @@ if __name__ == "__main__":
         except:
             print('Peak finding algorithm failed for predicted source. Skipping...')
             fail_counter+=1
-            save_path = f"/work/hdd/bfpq/aberres2/failed_eval_ims/test1/pred_fail{fail_counter}.npy"
+            save_path = f"/work/hdd/bfpq/aberres2/failed_eval_ims/test2/pred_fail{fail_counter}.npy"
             print(f'Saving images as {save_path}')
             np.save(save_path,np.vstack((out1,im_norm)))
             continue
@@ -122,7 +122,7 @@ if __name__ == "__main__":
         except:
             print('Peak finding algorithm failed for Roman source. Skipping...')
             fail_counter+=1
-            save_path = f"/work/hdd/bfpq/aberres2/failed_eval_ims/test1/roman_fail{fail_counter}.npy"
+            save_path = f"/work/hdd/bfpq/aberres2/failed_eval_ims/test2/roman_fail{fail_counter}.npy"
             print(f'Saving images as {save_path}')
             np.save(save_path,np.vstack((out1,im_norm)))
             continue
