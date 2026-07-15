@@ -121,7 +121,9 @@ if __name__ == "__main__":
         os.makedirs(os.path.join(args.output,'data'),exist_ok=True)
     if args.make_cutouts:
         annots = {'path':[], 'img':[]}
-    elif args.save_rubin_cutouts and args.make_cutouts:
+    else:
+        annots = {'roman_path':[], 'roman_img':[], 'rubin_path':[], 'rubin_img':[]}
+    if args.save_rubin_cutouts and args.make_cutouts:
         annots = {'path':[], 'img':[], 'rubin_cutout_path':[], 'rubin_cutout_img':[]}
     else:
         annots = {'roman_path':[], 'roman_img':[], 'rubin_path':[], 'rubin_img':[]}
