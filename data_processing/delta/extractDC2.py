@@ -104,6 +104,7 @@ def init_argparse():
     import argparse
     parser = argparse.ArgumentParser(description="Script to extract cutouts from Rubin and Roman coadds for training and evaluation of Rubin-to-Roman image translation models.")
     parser.add_argument('--make_cutouts', action=argparse.BooleanOptionalAction, help='Whether to make cutouts from the coadd images. If False, the script will only add the paths to the full coadd images to the annotations file without making cutouts.')
+    parser.add_argument('--save_rubin_cutouts', action=argparse.BooleanOptionalAction, help='Whether to save the not-reprojected Rubin cutouts along with the reprojected Rubin cutouts.')
     parser.add_argument('--cutout_size', type=int, default=64, help='Size of the square cutouts to extract (in pixels).')
     parser.add_argument('--rubin_img_dir', type=str, default='/work/hdd/bdsp/yse2/lsst_data/truth', help='Directory containing the Rubin coadd .npy files organized in subdirectories by tract and patch.')
     parser.add_argument('--roman_img_dir', type=str, default='/work/hdd/bdsp/yse2/truth-roman', help='Directory containing the Roman coadd .npy files organized in subdirectories by tract and patch.')
@@ -177,6 +178,15 @@ if __name__ == "__main__":
                                 break_stop = True
                                 print(f"n_test limit ({args.n_test}) has been reached, stopping now.")
                                 break
+                        if args.save_rubin_cutouts:
+                            rubin_cutout_data, rubin_cutout_wcs = make_cutout(coadd_rubin, wcs_rubin, pos_radec=(objs['ra'][i], objs['dec'][i]), cutout_size=np.ceil(args.cutout_size*(0.11/0.2)).astype(int)) # 0.2 rubin pixel scale, 0.11 roman pixel scale, so 64 pixel cutout is ~12.8 arcsec for rubin and ~7 arcsec for roman, rounding to nearest pixel
+                            if rubin_cutout_data is not None and np.isnan(rubin_cutout_data.min())==False:
+                                rubin_cutout_fname = f"{rubin_fname.strip('.npy').split('/')[-1]}_cut_{objs['id'][i]}_rubin.npy"
+                                rubin_path = os.path.join(args.output, 'data', rubin_cutout_fname)
+                                np.save(rubin_path, rubin_cutout_data.astype(np.float32))
+                                annots['rubin_cutout_path'].append(rubin_path)
+                                annots['rubin_cutout_img'].append(rubin_cutout_fname)
+                            
 
                     
             else:
