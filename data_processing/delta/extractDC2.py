@@ -119,7 +119,12 @@ if __name__ == "__main__":
     os.makedirs(args.output,exist_ok=True)
     if args.make_cutouts:
         os.makedirs(os.path.join(args.output,'data'),exist_ok=True)
-    annots = {'path':[], 'img':[]}
+    if args.make_cutouts:
+        annots = {'path':[], 'img':[]}
+    elif args.save_rubin_cutouts and args.make_cutouts:
+        annots = {'path':[], 'img':[], 'rubin_cutout_path':[], 'rubin_cutout_img':[]}
+    else:
+        annots = {'roman_path':[], 'roman_img':[], 'rubin_path':[], 'rubin_img':[]}
     with open('/projects/bfpq/rubin2roman/code/Rubin2Roman/data_processing/delta/dir_list.pkl', 'rb') as f:
         dir_list = pickle.load(f)
         f.close()
