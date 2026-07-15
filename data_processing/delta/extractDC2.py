@@ -190,6 +190,10 @@ if __name__ == "__main__":
                                 np.save(rubin_path, rubin_cutout_data.astype(np.float32))
                                 annots['rubin_cutout_path'].append(rubin_path)
                                 annots['rubin_cutout_img'].append(rubin_cutout_fname)
+                            else:
+                                print(f"Could not make Rubin cutout for source {objs['id'][i]} at ra={objs['ra'][i]}, dec={objs['dec'][i]}. Skipping this source.")
+                                annots['rubin_cutout_path'].append('None')
+                                annots['rubin_cutout_img'].append('None')
                         if args.n_test is not None and count >= args.n_test:
                                 break_stop = True
                                 print(f"n_test limit ({args.n_test}) has been reached, stopping now.")
