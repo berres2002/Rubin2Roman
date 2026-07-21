@@ -68,8 +68,8 @@ class CustomImageDatasetCond(Dataset):
         image_cond = torch.from_numpy(rubin_norm)#image_full[:6] # Rubin channels as conditioning information
         image = torch.from_numpy(roman_norm)#image_full[6:] # Roman channels as
         # image=image.unsqueeze(0)  # Add channel dimension if needed
-        image = image.to(device='cuda')  # Load .npy file as tensor
-        image_cond = image_cond.to(device='cuda')  # Load .npy file as tensor
+        image = image.to(device='cpu')  # Load .npy file as tensor
+        image_cond = image_cond.to(device='cpu')  # Load .npy file as tensor
         # label = self.img_labels.iloc[idx, 1]
         if self.transform:
             image = self.transform(image)
