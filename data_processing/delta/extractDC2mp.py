@@ -225,7 +225,7 @@ if __name__ == "__main__":
         annots_list = [r.get() for r in results]
     annotations = defaultdict(list)
     for annots in annots_list:
-        for key,value in annots.keys():
+        for key,value in annots.items():
             annotations[key].extend(value)
 
     annotations = pd.DataFrame(annots)
