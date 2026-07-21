@@ -117,7 +117,7 @@ def init_argparse():
     parser.add_argument('--n_test',type=int,default=None)
     return parser.parse_args()
 
-def extract(dir_list,args):
+def extract(dir_list,args,annots):
     count = 0
     break_stop = False
     for dir in dir_list:
@@ -221,11 +221,11 @@ if __name__ == "__main__":
     args.n_test = args.n_test/4
     
     with Pool(processes=4) as pool:
-        results = [pool.apply_async(extract, (dir_list[i], args)) for i in range(4)]
+        results = [pool.apply_async(extract, (dir_list[i], args, annots)) for i in range(4)]
         annots_list = [r.get() for r in results]
     annotations = defaultdict(list)
-    for annots in annots_list:
-        for key,value in annots.items():
+    for ants in annots_list:
+        for key,value in ants.items():
             annotations[key].extend(value)
 
     annotations = pd.DataFrame(annots)
