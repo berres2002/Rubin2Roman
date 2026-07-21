@@ -11,6 +11,7 @@ from skimage.feature import peak_local_max
 import pickle
 import glob
 import json
+from datetime import datetime
 
 def get_radec_bounds(wcs):
     max1=wcs.pixel_to_world(wcs._naxis[0], wcs._naxis[1])
@@ -115,6 +116,7 @@ def init_argparse():
     return parser.parse_args()
 
 if __name__ == "__main__":
+    t1 = datetime.now()
     args = init_argparse()
     os.makedirs(args.output,exist_ok=True)
     if args.make_cutouts:
@@ -214,6 +216,8 @@ if __name__ == "__main__":
     
     ann_path =os.path.join(args.output, 'annotations.csv')
     annotations.to_csv(ann_path, index=False)
+    t2 = datetime.now()
     print(f"Annotations with length {len(annotations)} saved to {ann_path}")
+    print(f"Total time taken: {t2-t1}")
     # fpath = ''
 
