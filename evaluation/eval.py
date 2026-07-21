@@ -54,6 +54,13 @@ def ZScoreNormalize(image: np.ndarray) -> np.ndarray:
     std = np.std(image, axis=(1, 2), keepdims=True)
     return (image - mean) / std
 
+# Taking reversible Norm from Scognamiglio et al. 2026
+def _AsinhNormalize(image: np.ndarray, sigma: float = 0.02297293) -> np.ndarray:
+    return 4*sigma*np.asinh(image / (3*sigma))
+
+def _AsinhReverseNormalize(image: np.ndarray, sigma: float = 0.02297293) -> np.ndarray:
+    return np.sinh(image/(4*sigma))*3*sigma
+
 # taken from BTK reconstruction eval
 def psnr(images1: np.ndarray, images2: np.ndarray) -> np.ndarray:
     """Compute peak-signal-to-noise-ratio from skimage.
