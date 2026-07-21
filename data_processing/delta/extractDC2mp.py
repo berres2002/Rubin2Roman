@@ -117,7 +117,7 @@ def init_argparse():
     parser.add_argument('--n_test',type=int,default=None)
     return parser.parse_args()
 
-def extract(dir_list,args,annots):
+def extract(dir_list,args,annots,roman_wcs_json):
     count = 0
     break_stop = False
     for dir in dir_list:
@@ -218,17 +218,18 @@ if __name__ == "__main__":
     np.random.seed(42069) # set seed for reproducibility
     np.random.shuffle(dir_list)
     dir_list = np.array(dir_list).reshape(4, np.floor(len(dir_list)/4).astype(int)) # split into 4 sublists for parallel processing
-    args.n_test = args.n_test/4
+    if args.n_test is not None:
+        args.n_test = args.n_test/4
     
     with Pool(processes=4) as pool:
-        results = [pool.apply_async(extract, (dir_list[i], args, annots)) for i in range(4)]
+        results = [pool.apply_async(extract, (dir_list[i], args, annots, roman_wcs_json)) for i in range(4)]
         annots_list = [r.get() for r in results]
-    annotations = defaultdict(list)
+    annotationsd = defaultdict(list)
     for ants in annots_list:
         for key,value in ants.items():
-            annotations[key].extend(value)
+            annotationsd[key].extend(value)
 
-    annotations = pd.DataFrame(annots)
+    annotations = pd.DataFrame(annotationsd)
     
     ann_path =os.path.join(args.output, 'annotations.csv')
     annotations.to_csv(ann_path, index=False)
