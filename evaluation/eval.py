@@ -55,10 +55,10 @@ def ZScoreNormalize(image: np.ndarray) -> np.ndarray:
     return (image - mean) / std
 
 # Taking reversible Norm from Scognamiglio et al. 2026
-def _AsinhNormalize(image: np.ndarray, sigma: float = 0.02297293) -> np.ndarray:
+def AsinhNormalize(image: np.ndarray, sigma: float = 0.02297293) -> np.ndarray:
     return 4*sigma*np.asinh(image / (3*sigma))
 
-def _AsinhReverseNormalize(image: np.ndarray, sigma: float = 0.02297293) -> np.ndarray:
+def AsinhReverseNormalize(image: np.ndarray, sigma: float = 0.02297293) -> np.ndarray:
     return np.sinh(image/(4*sigma))*3*sigma
 
 # taken from BTK reconstruction eval

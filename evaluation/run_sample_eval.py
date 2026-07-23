@@ -81,8 +81,8 @@ if __name__ == "__main__":
         img = np.load(path)
         name = path.split('/')[-1].strip('.npy')
         
-        fimg = ZScoreNormalize(img)
-        nimg = fimg[:6] # First 6 channels as the conditioning image
+        # fimg = ZScoreNormalize(img)
+        nimg = AsinhNormalize(img[:6]) # First 6 channels as the conditioning image
         # duplicate to n_samples batches
         nimg = np.repeat(nimg[np.newaxis, :], args.n_samples, axis=0)
         assert nimg.ndim == 4
@@ -93,7 +93,8 @@ if __name__ == "__main__":
         samples=model.sample(shape=[args.n_samples,3,64,64],steps=args.steps, condition=[cims], verbose=0)
 
         full_samp = samples.cpu().numpy()
-        s_median = np.median(full_samp, axis=0)
+        full_samp_nn = AsinhReverseNormalize(full_samp)
+        s_median = np.mean(full_samp_nn, axis=0)
         if s_median.max() == 0.0 or np.isnan(s_median.max()) or np.sum(s_median) == 0.0 or np.isnan(np.sum(s_median)):
             print('Model produced empty or nan valued images')
             continue
@@ -104,8 +105,8 @@ if __name__ == "__main__":
         # out1 = normalize_center(s_median)
         # im_norm = normalize_center(fimg[6:]) # Normalize the target image (last 3 channels)
         out1 = s_median
-        im_norm = fimg[6:]
-        if abs(out1).max() == np.inf or abs(im_norm).max() == np.inf:
+        timg = img[6:]
+        if abs(out1).max() == np.inf or abs(timg).max() == np.inf:
             print('Normalization produced inf values. Skipping.')
             continue
         try:
@@ -115,41 +116,41 @@ if __name__ == "__main__":
             fail_counter+=1
             save_path = f"/work/hdd/bfpq/aberres2/failed_eval_ims/test2/pred_fail{fail_counter}.npy"
             print(f'Saving images as {save_path}')
-            np.save(save_path,np.vstack((out1,im_norm)))
+            np.save(save_path,np.vstack((out1,timg)))
             continue
         try:
-            im_cens = GetCenterPeak(im_norm)
+            im_cens = GetCenterPeak(timg)
         except:
             print('Peak finding algorithm failed for Roman source. Skipping...')
             fail_counter+=1
             save_path = f"/work/hdd/bfpq/aberres2/failed_eval_ims/test2/roman_fail{fail_counter}.npy"
             print(f'Saving images as {save_path}')
-            np.save(save_path,np.vstack((out1,im_norm)))
+            np.save(save_path,np.vstack((out1,timg)))
             continue
         dd1['cutout_id'].append(name)
         pred_morph = get_morph(out1)
-        roman_morph = get_morph(im_norm)
+        roman_morph = get_morph(timg)
         cols = pred_morph.keys()
         bands = ['Y','J','H']
         for j in range(len(bands)):
             for k in range(len(cols)):
                 dd1[f'pred_{cols[k]}_{bands[j]}'].append(np.float64(pred_morph[j][cols[k]]))
                 dd1[f'roman_{cols[k]}_{bands[j]}'].append(np.float64(roman_morph[j][cols[k]]))
-        out1 = normalize_unit(s_median)
-        im_norm = normalize_unit(fimg[6:]) # Normalize the target image (last 3 channels)
+        out_norm = normalize_unit(s_median)
+        im_norm = normalize_unit(timg) # Normalize the target image (last 3 channels)
         # save some of the model outputs REMOVE WHEN NOT TESTING
         # np.save(f'/work/hdd/bfpq/aberres2/test_eval_imgs/pred_{i}.npy',out1)
         # np.save(f'/work/hdd/bfpq/aberres2/test_eval_imgs/roman_{i}.npy',im_norm)
-        psnr_val = psnr(out1, im_norm)
+        psnr_val = psnr(out_norm, im_norm)
         dd1['psnr_Y'].append(psnr_val[0])
         dd1['psnr_J'].append(psnr_val[1])
         dd1['psnr_H'].append(psnr_val[2])
-        ssim_val = struct_sim(out1, im_norm)
+        ssim_val = struct_sim(out_norm, im_norm)
         dd1['ssim_Y'].append(ssim_val[0])
         dd1['ssim_J'].append(ssim_val[1])
         dd1['ssim_H'].append(ssim_val[2])
         # peak_local_max is index coordinates so x and y are reversed
-        im_hlr = get_HLR(im_norm,im_cens[:,1],im_cens[:,0])
+        im_hlr = get_HLR(timg,im_cens[:,1],im_cens[:,0])
         samp_hlr = get_HLR(out1,out_cens[:,1],out_cens[:,0])
         dd1['roman_HLR_Y'].append(im_hlr[0])
         dd1['roman_HLR_J'].append(im_hlr[1])
@@ -159,7 +160,7 @@ if __name__ == "__main__":
         dd1['pred_HLR_H'].append(samp_hlr[2])
         # TODO: Figure out radius for aperture photometry for flux measurement
         # Choosing a radius of 10 pixels
-        im_flux,im_flux_errs = get_aperture_fluxes(im_norm, im_cens[:,0], im_cens[:,1], radius=10)
+        im_flux,im_flux_errs = get_aperture_fluxes(timg, im_cens[:,0], im_cens[:,1], radius=10)
         samp_flux, samp_flux_errs = get_aperture_fluxes(out1, out_cens[:,0], out_cens[:,1], radius=10)
         dd1['roman_flux_Y'].append(im_flux[0])
         dd1['roman_flux_J'].append(im_flux[1])
