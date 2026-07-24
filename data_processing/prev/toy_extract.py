@@ -12,6 +12,7 @@ import pickle
 import glob
 import json
 from datetime import datetime
+from astropy.io import fits
 
 # Open Universe Roman and Rubin Preview Paths
 BUCKET_NAME = "nasa-irsa-simulations"
