@@ -95,7 +95,7 @@ class CustomImageDatasetYJH(Dataset):
         # image_cond = image_full[:6] # Rubin channels as conditioning information
         image = image_full[6:] # Roman channels as
         # image=image.unsqueeze(0)  # Add channel dimension if needed
-        image = image.to(device='cuda')  # Load .npy file as tensor
+        image = image.to(device='cpu')  # Load .npy file as tensor
         # image_cond = image_cond.to(device='cuda')  # Load .npy file as tensor
         # label = self.img_labels.iloc[idx, 1]
         if self.transform:
