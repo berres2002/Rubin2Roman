@@ -67,7 +67,7 @@ if __name__ == "__main__":
     # df = pd.read_csv('/work/hdd/bfpq/aberres2/brightest_gals_cutouts_64/test1.csv')
     print('Loading test data paths...')
     df = pd.read_csv(args.test_csv)
-    df_idx = df.index.values
+    df_idx = df.index.values.copy()
     paths= np.array(df['path'].values)
 
     if args.test_rubin_csv is not None:
