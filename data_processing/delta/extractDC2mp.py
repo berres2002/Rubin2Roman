@@ -165,7 +165,7 @@ def extract(dir_list,args,annots,roman_wcs_json):
                             count +=1
                             if args.save_rubin_cutouts:
                                 rubin_cutout_data, rubin_cutout_wcs = make_cutout(coadd_rubin, wcs_rubin, pos_radec=(objs['ra'][i], objs['dec'][i]), \
-                                cutout_size=22) # true resample size, checked by eye, may reduce the amount of "None" cutouts
+                                cutout_size=32) # true resample size, checked by eye, may reduce the amount of "None" cutouts
                                 # cutout_size=np.ceil(args.cutout_size*(0.11/0.2)).astype(int)) # 0.2 rubin pixel scale, 0.11 roman pixel scale, so 64 pixel cutout is ~12.8 arcsec for rubin and ~7 arcsec for roman, rounding to nearest pixel
                                 if rubin_cutout_data is not None and np.isnan(rubin_cutout_data.min())==False:
                                     rubin_cutout_fname = f"{rubin_fname.strip('.npy').split('/')[-1]}_cut_{objs['id'][i]}_rubin.npy"
