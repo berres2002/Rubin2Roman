@@ -19,7 +19,7 @@ from torch.func import vjp
 
 
 
-with open('psf_arr_y.pkl', 'rb') as f:
+with open('/projects/bfpq/rubin2roman/psf_arr_y.pkl', 'rb') as f:
     # global gs_psf
     gs_psf = pickle.load(f)
     # gs_psf = gs_psf.withFlux(1.0)  # ensure unit flux
