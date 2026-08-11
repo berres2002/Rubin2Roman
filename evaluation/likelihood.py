@@ -73,7 +73,7 @@ class likelihood:
         # y = y#.to(device='cuda')
         # x=x.detach().cpu().numpy()
         # conv = nn.Conv2d(1, 1, kernel_size=64, stride=1, padding=0, bias=False)
-        x = self.convolve_with_psf(x, self.gs_psf, flip_kernel=True)
+        x = self.convolve_with_psf(x, flip_kernel=True)
         # galaxy = galsim.InterpolatedImage(galsim.Image(x, scale=0.11))
         # convolved = galsim.Convolve([galaxy, gs_psf])
         # result_image = convolved.drawImage(nx=64, ny=64, scale=0.2, method='auto')
