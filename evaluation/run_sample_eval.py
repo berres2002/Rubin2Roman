@@ -8,6 +8,7 @@ from tqdm import tqdm
 from eval import *
 import os
 from datetime import datetime
+from likelihood import likelihood
 
 # def _ZScoreNormalize(image: np.ndarray) -> np.ndarray:
 #     """
@@ -45,7 +46,9 @@ def init_argparse():
     import argparse
     parser = argparse.ArgumentParser(description="Evaluate the trained model on test data.")
     parser.add_argument('--checkpoints_directory', type=str, required=True, help='Directory where model checkpoints are stored.')
+    parser.add_argument('--model_type', type=str, required=True, choices=['condition','likelihood'], help='Type of model to evaluate: "condition" for conditional model, "likelihood" for likelihood sampling model.')
     parser.add_argument('--test_csv', type=str, required=True, help='CSV file containing paths to test images.')
+    parser.add_argument('--test_rubin_csv', type=str,default=None,help='CSV file containing Rubin catalog data for test images. If not provided, Rubin catalog features will not be evaluated.')
     parser.add_argument('--output_dir', type=str, required=True, help='Directory to save evaluation outputs.')
     parser.add_argument('--n_samples', type=int, default=400, help='Number of samples to generate for each test image.')
     parser.add_argument('--steps', type=int, default=1000, help='Number of diffusion steps for sampling.')
@@ -64,36 +67,47 @@ if __name__ == "__main__":
     # df = pd.read_csv('/work/hdd/bfpq/aberres2/brightest_gals_cutouts_64/test1.csv')
     print('Loading test data paths...')
     df = pd.read_csv(args.test_csv)
-
+    df_idx = df.index.values
     paths= np.array(df['path'].values)
+
+    if args.test_rubin_csv is not None:
+        rubin_df = pd.read_csv(args.test_rubin_csv)
+        rubin_paths = np.array(rubin_df['path'].values)
     # img_names = df['img'].values
     # randomize the order of the paths
     np.random.seed(42069)
-    np.random.shuffle(paths)
+    np.random.shuffle(df_idx)
 
     #TEST CASE
-    if args.n_test < paths.size:
-        paths = paths[:args.n_test]
+    if args.n_test < df_idx.size:
+        df_idx = df_idx[:args.n_test]
     fail_counter = 0
     print('Evaluating model on test data...')
     for i in tqdm(range(len(paths))):
-        path = paths[i]
+        idx = df_idx[i]
+        path = paths[idx]
         img = np.load(path)
         name = path.split('/')[-1].strip('.npy')
         
-        # fimg = ZScoreNormalize(img)
-        nimg = AsinhNormalize(img[:6]) # First 6 channels as the conditioning image
-        # duplicate to n_samples batches
-        nimg = np.repeat(nimg[np.newaxis, :], args.n_samples, axis=0)
-        assert nimg.ndim == 4
-        cims = torch.from_numpy(nimg)
-        # cims = cims.unsqueeze(0)
-        cims = cims.to(model.device)
+        if args.model_type == 'condition':
+            # fimg = ZScoreNormalize(img)
+            nimg = AsinhNormalize(img[:6]) # First 6 channels as the conditioning image
+            # duplicate to n_samples batches
+            nimg = np.repeat(nimg[np.newaxis, :], args.n_samples, axis=0)
+            assert nimg.ndim == 4
+            cims = torch.from_numpy(nimg)
+            # cims = cims.unsqueeze(0)
+            cims = cims.to(model.device)
 
-        samples=model.sample(shape=[args.n_samples,3,64,64],steps=args.steps, condition=[cims], verbose=0)
+            samples=model.sample(shape=[args.n_samples,3,64,64],steps=args.steps, condition=[cims], verbose=0)
 
-        full_samp = samples.cpu().numpy()
-        full_samp_nn = AsinhReverseNormalize(full_samp)
+            full_samp = samples.cpu().numpy()
+            full_samp_nn = AsinhReverseNormalize(full_samp)
+        elif args.model_type == 'likelihood':
+            rubin_img = np.load(rubin_paths[idx])
+            lf1 = likelihood(rubin_img, args.n_samples)
+            samples=model.sample(shape=[args.n_samples,3,64,64],steps=args.steps, likelihood_score_fn=likelihood.score,guidance_factor=2, verbose=0)
+            full_samp_nn = samples.cpu().numpy()/lf1.mult_val
         s_median = np.mean(full_samp_nn, axis=0)
         if s_median.max() == 0.0 or np.isnan(s_median.max()) or np.sum(s_median) == 0.0 or np.isnan(np.sum(s_median)):
             print('Model produced empty or nan valued images')
