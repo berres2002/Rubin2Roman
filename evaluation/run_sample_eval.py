@@ -106,8 +106,8 @@ if __name__ == "__main__":
         elif args.model_type == 'likelihood':
             rubin_img = np.load(rubin_paths[idx])
             lf1 = likelihood(rubin_img, args.n_samples)
-            samples=model.sample(shape=[args.n_samples,3,64,64],steps=args.steps, likelihood_score_fn=lf1.score,guidance_factor=2, verbose=0)
-            full_samp_nn = samples.cpu().numpy()/lf1.mult_val
+            samples=model.sample(shape=[args.n_samples,3,64,64],steps=args.steps, likelihood_score_fn=lf1.score,guidance_factor=3, verbose=0)
+            full_samp_nn = samples.cpu().numpy()*140
         s_median = np.mean(full_samp_nn, axis=0)
         if s_median.max() == 0.0 or np.isnan(s_median.max()) or np.sum(s_median) == 0.0 or np.isnan(np.sum(s_median)):
             print('Model produced empty or nan valued images')
