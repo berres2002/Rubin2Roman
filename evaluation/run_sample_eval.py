@@ -9,6 +9,7 @@ from eval import *
 import os
 from datetime import datetime
 from likelihood import likelihood
+import pickle
 
 # def _ZScoreNormalize(image: np.ndarray) -> np.ndarray:
 #     """
@@ -60,6 +61,7 @@ if __name__ == "__main__":
     args = init_argparse()
     # checkpoints_directory = '/work/hdd/bfpq/aberres2/checkpoints/demo_cond_10k'
     dd1 = {col:[] for col in COLUMNS}
+    dd2 = {'roman':{'id':[],'Y':{"cog_profile":[],"cog_radii":[]},'J':{"cog_profile":[],"cog_radii":[]},'H':{"cog_profile":[],"cog_radii":[]}}, 'pred':{'Y':{"cog_profile":[],"cog_radii":[]},'J':{"cog_profile":[],"cog_radii":[]},'H':{"cog_profile":[],"cog_radii":[]}}}
     checkpoints_directory = args.checkpoints_directory
     print('Loading model...')
     model = ScoreModel(checkpoints_directory=checkpoints_directory)
@@ -73,6 +75,7 @@ if __name__ == "__main__":
     if args.test_rubin_csv is not None:
         rubin_df = pd.read_csv(args.test_rubin_csv)
         rubin_paths = np.array(rubin_df['path'].values)
+        rubin_var_paths = np.array(rubin_df['var_path'].values)
     # img_names = df['img'].values
     # randomize the order of the paths
     np.random.seed(42069)
@@ -104,10 +107,12 @@ if __name__ == "__main__":
             full_samp = samples.cpu().numpy()
             full_samp_nn = AsinhReverseNormalize(full_samp)
         elif args.model_type == 'likelihood':
+            mult_val = 1/159.23617710583153
             rubin_img = np.load(rubin_paths[idx])
-            lf1 = likelihood(rubin_img, args.n_samples)
+            rubin_var = np.load(rubin_var_paths[idx])
+            lf1 = likelihood(rubin_img, rubin_var, args.n_samples)
             samples=model.sample(shape=[args.n_samples,3,64,64],steps=args.steps, likelihood_score_fn=lf1.score,guidance_factor=3, verbose=0)
-            full_samp_nn = samples.cpu().numpy()*140
+            full_samp_nn = samples.cpu().numpy()*mult_val
         s_median = np.mean(full_samp_nn, axis=0)
         if s_median.max() == 0.0 or np.isnan(s_median.max()) or np.sum(s_median) == 0.0 or np.isnan(np.sum(s_median)):
             print('Model produced empty or nan valued images')
@@ -142,6 +147,7 @@ if __name__ == "__main__":
             np.save(save_path,np.vstack((out1,timg)))
             continue
         dd1['cutout_id'].append(name)
+        dd2['roman']['id'].append(name)
         pred_morph = get_morph(out1)
         roman_morph = get_morph(timg)
         cols = pred_morph.keys()
@@ -164,8 +170,13 @@ if __name__ == "__main__":
         dd1['ssim_J'].append(ssim_val[1])
         dd1['ssim_H'].append(ssim_val[2])
         # peak_local_max is index coordinates so x and y are reversed
-        im_hlr = get_HLR(timg,im_cens[:,1],im_cens[:,0])
-        samp_hlr = get_HLR(out1,out_cens[:,1],out_cens[:,0])
+        im_hlr,im_cp,radii = get_HLR(timg,im_cens[:,1],im_cens[:,0],return_cog=True)
+        samp_hlr, samp_cp, radii = get_HLR(out1,out_cens[:,1],out_cens[:,0],return_cog=True)
+        for i in range(len(bands)):
+            dd2['roman'][bands[i]]['cog_profile'].append(im_cp[i])
+            dd2['roman'][bands[i]]['cog_radii'].append(radii)
+            dd2['pred'][bands[i]]['cog_profile'].append(samp_cp[i])
+            dd2['pred'][bands[i]]['cog_radii'].append(radii)
         dd1['roman_HLR_Y'].append(im_hlr[0])
         dd1['roman_HLR_J'].append(im_hlr[1])
         dd1['roman_HLR_H'].append(im_hlr[2])
@@ -186,6 +197,8 @@ if __name__ == "__main__":
     data_out = pd.DataFrame(dd1)
     os.makedirs(args.output_dir, exist_ok=True)
     data_out.to_csv(f"{args.output_dir}/evaluation_results.csv", index=False)
+    with open(f"{args.output_dir}/evaluation_vals.pkl", 'wb') as f:
+        pickle.dump(dd2, f)
     print(f"Saved evaluation results to {args.output_dir}/evaluation_results.csv")
     td =datetime.now()-dt1
     print('This evaluation took',td)

@@ -142,21 +142,34 @@ def get_aperture_fluxes(images, x, y, radius, sky_level=None):
     return fluxes, fluxerrs
 
 # TODO: add half-light radius metric
-def _compute_halfLightR(image, xycen, radii=np.linspace(1,25,50), error=None):
+def _compute_halfLightR(image, xycen, radii=np.linspace(1,25,50), error=None, return_cog=False):
     """Compute the half-light radius in pixels of a single image given the center and a set of radii."""
     
     cog = CurveOfGrowth(image,xycen,radii,error=error)
+    cog_prof = cog.profile
     cog.normalize(method='max')
     hfc = abs(cog.profile-0.5).argmin()
-    return cog.radius[hfc]
+    if return_cog:
+        return cog.radius[hfc], cog_prof, radii
+    else:
+        return cog.radius[hfc]
 
-def get_HLR(images, x, y):
+def get_HLR(images, x, y, return_cog=False):
     n, h, w = images.shape
     assert x.shape == (n,) and y.shape == (n,)
     hlrs = np.zeros(n)
+    if return_cog:
+        cog_profs = []
     for ii in range(n):
-        hlrs[ii] = _compute_halfLightR(images[ii], (x[ii], y[ii]))
-    return hlrs
+        if return_cog:
+            hlrs[ii], cog_prof, radii = _compute_halfLightR(images[ii], (x[ii], y[ii]), return_cog=True)
+            cog_profs.append(cog_prof)
+        else:
+            hlrs[ii] = _compute_halfLightR(images[ii], (x[ii], y[ii]))
+    if return_cog:
+        return hlrs, cog_profs, radii
+    else:
+        return hlrs
 
 def _match_segmentation(image, catalog):
     cenxy = _FindCenterPeak(image)
