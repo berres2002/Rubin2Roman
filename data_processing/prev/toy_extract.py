@@ -214,7 +214,8 @@ if __name__ == "__main__":
     os.makedirs(args.output,exist_ok=True)
     if args.make_cutouts:
         os.makedirs(os.path.join(args.output,'data'),exist_ok=True)
-    df = pd.read_csv('/work/hdd/bfpq/aberres2/brightest_gals_cutouts_64/test1.csv')
+    ann_path =os.path.join(args.output, 'test1_rubin_annotations.csv')
+    df = pd.read_csv(ann_path)
     annots = {'var_path':[]}
     filter_rubin = ['u','g','r','i','z','y']
     print("Downloading Rubin coadds...")
@@ -232,9 +233,9 @@ if __name__ == "__main__":
     annotations = pd.DataFrame(annots)
 
     # Joining to existing annotations file
-    ann_path =os.path.join(args.output, 'test1_rubin_annotations.csv')
-    df_existing = pd.read_csv(ann_path)
-    df2=df_existing.join(annotations)
+    
+    # df_existing = pd.read_csv(ann_path)
+    df2=df.join(annotations)
     df2.to_csv(ann_path, index=False)
     t2 = datetime.now()
     print(f"Annotations with length {len(annotations)} saved to {ann_path}")
