@@ -93,10 +93,10 @@ def get_rubin_coadd(filter):
 
     with fits.open(f"s3://{coadd_s3_fpath}", fsspec_kwargs={"anon": True}) as hdul:
         # retrieve science data from coadd fits
-        coadd_data = hdul[1].section[:,:]
+        coadd_data = hdul[3].section[:,:]
 
         # make wcs using header
-        coadd_wcs = wcs.WCS(hdul[1].header)
+        coadd_wcs = wcs.WCS(hdul[3].header)
 
         return {'data': coadd_data, 'wcs': coadd_wcs}
 
@@ -215,7 +215,7 @@ if __name__ == "__main__":
     if args.make_cutouts:
         os.makedirs(os.path.join(args.output,'data'),exist_ok=True)
     df = pd.read_csv('/work/hdd/bfpq/aberres2/brightest_gals_cutouts_64/test1.csv')
-    annots = {'path':[], 'img':[],'ra':[],'dec':[]}
+    annots = {'var_path':[]}
     filter_rubin = ['u','g','r','i','z','y']
     print("Downloading Rubin coadds...")
     rubin_ims, wcs_rubin = download_rubin(filter_rubin)
@@ -224,15 +224,18 @@ if __name__ == "__main__":
         ra, dec = row['ra'], row['dec']
         sc1 = SkyCoord(ra=ra, dec=dec, unit='deg')
         cutout,_ = make_cutout(rubin_ims, wcs_rubin[0], coord=sc1, cutout_size=32)
-        np.save(os.path.join(args.output,'data',f"rubin_ugrizy_{ra:0.4f}_{dec:0.4f}.npy"), cutout)
-        annots['path'].append(os.path.join(args.output,'data',f"rubin_ugrizy_{ra:0.4f}_{dec:0.4f}.npy"))
-        annots['img'].append(f"rubin_ugrizy_{ra:0.4f}_{dec:0.4f}.npy")
-        annots['ra'].append(ra)
-        annots['dec'].append(dec)
+        np.save(os.path.join(args.output,'data',f"rubin_ugrizy_var_{ra:0.4f}_{dec:0.4f}.npy"), cutout)
+        annots['var_path'].append(os.path.join(args.output,'data',f"rubin_ugrizy_var_{ra:0.4f}_{dec:0.4f}.npy"))
+        # annots['img'].append(f"rubin_ugrizy_{ra:0.4f}_{dec:0.4f}.npy")
+        # annots['ra'].append(ra)
+        # annots['dec'].append(dec)
     annotations = pd.DataFrame(annots)
-    
+
+    # Joining to existing annotations file
     ann_path =os.path.join(args.output, 'test1_rubin_annotations.csv')
-    annotations.to_csv(ann_path, index=False)
+    df_existing = pd.read_csv(ann_path)
+    df_existing.join(annotations)
+    df_existing.to_csv(ann_path, index=False)
     t2 = datetime.now()
     print(f"Annotations with length {len(annotations)} saved to {ann_path}")
     print(f"Total time taken: {t2-t1}")
