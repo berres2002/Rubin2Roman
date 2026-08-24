@@ -107,7 +107,7 @@ class likelihood:
         Ax = A(x)
         return ((-0.5 * (y - Ax)**2)/ var)
     
-    def score(self,x,t):
+    def score(self,t,x):
         with torch.enable_grad():
             x = x.detach().requires_grad_(True)
             log_like = self.LL(x).sum()
