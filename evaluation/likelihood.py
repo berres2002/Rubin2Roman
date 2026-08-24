@@ -93,10 +93,10 @@ class PhysModel(nn.Module):
 class likelihood:
     def __init__(self, rubin_im, rubin_var, batch_size, device='cuda'):
         rub_im=np.repeat(rubin_im[np.newaxis, :], batch_size, axis=0)
-        yim=rub_im[:,-1][:,np.newaxis]
+        yim=rub_im[:,-1][:,np.newaxis] # -1 y band
         self.y_in = torch.from_numpy(yim)
-        y_var=np.repeat(rubin_var[np.newaxis, :,:], batch_size, axis=0)
-        y_var=y_var[:][:,np.newaxis]
+        y_var=np.repeat(rubin_var[np.newaxis, :], batch_size, axis=0)
+        y_var=y_var[:,-1][:,np.newaxis] # -1 y band
         self.y_var = torch.from_numpy(y_var)
         self.device = device
 
