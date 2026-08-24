@@ -234,8 +234,8 @@ if __name__ == "__main__":
     # Joining to existing annotations file
     ann_path =os.path.join(args.output, 'test1_rubin_annotations.csv')
     df_existing = pd.read_csv(ann_path)
-    df_existing.join(annotations)
-    df_existing.to_csv(ann_path, index=False)
+    df2=df_existing.join(annotations)
+    df2.to_csv(ann_path, index=False)
     t2 = datetime.now()
     print(f"Annotations with length {len(annotations)} saved to {ann_path}")
     print(f"Total time taken: {t2-t1}")
