@@ -40,7 +40,7 @@ def main(args):
     # net = DDPM(channels=3)
     net = NCSNpp(channels=3)
     #net = NCSNpp(channels=3, condition=('Input',), condition_input_channels=6, resblock_type='ddpm')
-    model = ScoreModel(model=net, sigma_min=1e-4, sigma_max=500, device="cuda") # VE SDE
+    model = ScoreModel(model=net, sigma_min=1e-4, sigma_max=2e4, device="cuda") # VE SDE
     # model = ScoreModel(model=net, beta_min=1e-2, beta_max=20, device='cuda') # VP SDE
     print(f"Starting training with {args.data_norm} data normalization...")
     # 200 * 4 = 800, 400 * 5 = 2000
