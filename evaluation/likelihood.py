@@ -83,15 +83,21 @@ class PhysModel(nn.Module):
         # result_array = result_image.array
         pool = nn.AvgPool2d(kernel_size=2, stride=2)
         # result_array = torch.from_numpy(result_array)
-        x = pool(x)
+        x = 4*pool(x)
         # mu_t = torch.exp(0.25* t*(beta_min*(-2+t)-beta_max*t))
         # mu_t = torch.exp(0.25* t*(beta_min*(-2+t)-beta_max*t))
         # ln_score = y*mu_t - out
         # print("forward out:", x.requires_grad, x.grad_fn)
         return x
+with torch.no_grad():
+    fwd_model = PhysModel(device='cuda')
+    jacobian = torch.func.jacrev(lambda a: fwd_model(a[None]*mult_val).squeeze(0))(torch.ones(3,gs_psf.shape,device='cuda', dtype=torch.float32))
+    AAT = torch.sum(jacobian**2, dim=(-3,-2,-1))[None]
+# AAT = torch.sum()
 
 class likelihood:
-    def __init__(self, rubin_im, rubin_var, batch_size, device='cuda'):
+    def __init__(self, rubin_im, rubin_var, x_shape, sde, device='cuda'):
+        batch_size, C, H, W = x_shape
         rub_im=np.repeat(rubin_im[np.newaxis, :], batch_size, axis=0)
         yim=rub_im[:,-1][:,np.newaxis] # -1 y band
         self.y_in = torch.from_numpy(yim)
@@ -99,17 +105,23 @@ class likelihood:
         y_var=y_var[:,-1][:,np.newaxis] # -1 y band
         self.y_var = torch.from_numpy(y_var)
         self.device = device
+        fwd_model = PhysModel(device=device)
+        self.A = fwd_model
+        self.AAT = AAT
+        self.sde=sde
 
-    def LL(self,x):
+
+    def LL(self,x,t):
         y= self.y_in.to(device=self.device)
         var=self.y_var.to(device=self.device)
-        A = PhysModel(device=self.device)
-        Ax = A(x)
+        anneal = self.AAT * self.sde.sigma(t[0])**2
+        var = var + anneal
+        Ax = self.A(x)
         return ((-0.5 * (y - Ax)**2)/ var)
     
     def score(self,t,x):
         with torch.enable_grad():
             x = x.detach().requires_grad_(True)
-            log_like = self.LL(x).sum()
+            log_like = self.LL(x,t).sum()
             grad_x = torch.autograd.grad(log_like, x)[0]
         return grad_x
