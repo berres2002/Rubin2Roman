@@ -110,8 +110,8 @@ if __name__ == "__main__":
             mult_val = 1/159.23617710583153
             rubin_img = np.load(rubin_paths[idx])
             rubin_var = np.load(rubin_var_paths[idx])
-            lf1 = likelihood(rubin_img, rubin_var, args.n_samples)
-            samples=model.sample(shape=[args.n_samples,3,64,64],steps=args.steps, likelihood_score_fn=lf1.score,guidance_factor=3, verbose=0)
+            lf1 = likelihood(rubin_img, rubin_var, (args.n_samples,3,64,64), sde=model.sde, device=model.device)
+            samples=model.sample(shape=[args.n_samples,3,64,64],steps=args.steps, likelihood_score_fn=lf1.score,guidance_factor=1, verbose=0)
             full_samp_nn = samples.cpu().numpy()/mult_val
         s_median = np.mean(full_samp_nn, axis=0)
         if s_median.max() == 0.0 or np.isnan(s_median.max()) or np.sum(s_median) == 0.0 or np.isnan(np.sum(s_median)):
