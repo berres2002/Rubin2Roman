@@ -91,7 +91,7 @@ class PhysModel(nn.Module):
         return x
 with torch.no_grad():
     fwd_model = PhysModel(device='cuda')
-    jacobian = torch.func.jacrev(lambda a: fwd_model(a[None]*mult_val).squeeze(0))(torch.ones(3,*gs_psf.shape,device='cuda', dtype=torch.float32))
+    jacobian = torch.func.jacrev(lambda a: fwd_model(a[None]).squeeze(0))(torch.ones(3,*gs_psf.shape,device='cuda', dtype=torch.float32))
     AAT = torch.sum(jacobian**2, dim=(-3,-2,-1))[None]
 # AAT = torch.sum()
 
