@@ -83,7 +83,7 @@ class PhysModel(nn.Module):
         # result_array = result_image.array
         pool = nn.AvgPool2d(kernel_size=2, stride=2)
         # result_array = torch.from_numpy(result_array)
-        x = 4*pool(x)
+        x = pool(x)
         # mu_t = torch.exp(0.25* t*(beta_min*(-2+t)-beta_max*t))
         # mu_t = torch.exp(0.25* t*(beta_min*(-2+t)-beta_max*t))
         # ln_score = y*mu_t - out
@@ -91,7 +91,7 @@ class PhysModel(nn.Module):
         return x
 with torch.no_grad():
     fwd_model = PhysModel(device='cuda')
-    jacobian = torch.func.jacrev(lambda a: fwd_model(a[None]*mult_val).squeeze(0))(torch.ones(3,gs_psf.shape,device='cuda', dtype=torch.float32))
+    jacobian = torch.func.jacrev(lambda a: fwd_model(a[None]*mult_val).squeeze(0))(torch.ones(3,*gs_psf.shape,device='cuda', dtype=torch.float32))
     AAT = torch.sum(jacobian**2, dim=(-3,-2,-1))[None]
 # AAT = torch.sum()
 
