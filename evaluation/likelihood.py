@@ -88,7 +88,7 @@ class PhysModel(nn.Module):
         # mu_t = torch.exp(0.25* t*(beta_min*(-2+t)-beta_max*t))
         # ln_score = y*mu_t - out
         # print("forward out:", x.requires_grad, x.grad_fn)
-        return x
+        return x/108
 with torch.no_grad():
     fwd_model = PhysModel(device='cuda')
     jacobian = torch.func.jacrev(lambda a: fwd_model(a[None]).squeeze(0))(torch.ones(3,*gs_psf.shape,device='cuda', dtype=torch.float32))
