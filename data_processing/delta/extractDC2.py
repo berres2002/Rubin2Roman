@@ -63,7 +63,8 @@ def get_objects_from_json(path):
         f.close()
     for i in range(len(data)):
         # truth_type 2 is star, 1 is galaxy
-        if data[i]['truth_type'] == 1:
+        # include mag_y cut as well, mag_y < 24.9 for Rubin
+        if data[i]['truth_type'] == 1 and data[i]['mag_y'] < 24.9:
             objs['id'].append(data[i]['id'])
             objs['ra'].append(data[i]['ra'])
             objs['dec'].append(data[i]['dec'])
@@ -107,8 +108,8 @@ def init_argparse():
     parser.add_argument('--make_cutouts', action=argparse.BooleanOptionalAction, help='Whether to make cutouts from the coadd images. If False, the script will only add the paths to the full coadd images to the annotations file without making cutouts.')
     parser.add_argument('--save_rubin_cutouts', action=argparse.BooleanOptionalAction, help='Whether to save the not-reprojected Rubin cutouts along with the reprojected Rubin cutouts.')
     parser.add_argument('--cutout_size', type=int, default=64, help='Size of the square cutouts to extract (in pixels).')
-    parser.add_argument('--rubin_img_dir', type=str, default='/work/hdd/bdsp/yse2/lsst_data/truth', help='Directory containing the Rubin coadd .npy files organized in subdirectories by tract and patch.')
-    parser.add_argument('--roman_img_dir', type=str, default='/work/hdd/bdsp/yse2/truth-roman', help='Directory containing the Roman coadd .npy files organized in subdirectories by tract and patch.')
+    parser.add_argument('--rubin_img_dir', type=str, default='/work/hdd/bfhm/yse2/lsst_data/truth', help='Directory containing the Rubin coadd .npy files organized in subdirectories by tract and patch.')
+    parser.add_argument('--roman_img_dir', type=str, default='/work/hdd/bfhm/yse2/truth-roman', help='Directory containing the Roman coadd .npy files organized in subdirectories by tract and patch.')
     parser.add_argument('--output', type=str, help='Directory where the extracted cutouts and annotations will be saved.')
     # parser.add_argument('--dir_list_path', type=str, default='dir_list.pkl', help='Path to the pickle file containing the list of directories to process.')
     parser.add_argument('--roman_wcs_json_path', type=str, default='/projects/bfhm/yse2/annotations_roman/all_wcs.json', help='Path to the JSON file containing WCS information for the Roman data.')
@@ -165,9 +166,9 @@ if __name__ == "__main__":
                 # TODO: add in cutout making and saving here
                 b, h, w = coadd_roman.shape
                 rubin_b, rubin_h, rubin_w = coadd_rubin.shape
-                big_array = np.zeros((b+rubin_b, h, w))
-                big_array[rubin_b:]=coadd_roman
-                big_array[:rubin_b],_=reproject_rubin_to_roman(coadd_rubin, wcs_rubin, wcs_roman, coadd_roman[0])
+                # big_array = np.zeros((b+rubin_b, h, w))
+                # big_array[rubin_b:]=coadd_roman
+                # big_array[:rubin_b],_=reproject_rubin_to_roman(coadd_rubin, wcs_rubin, wcs_roman, coadd_roman[0])
                 # TODO: write cutouts centered on table sources function
                 truth_json_path = 'truth_'+rubin_fname.strip('.npy').split('/')[-1]+'.json'
                 truth_json_path = os.path.join(args.rubin_img_dir, dir, truth_json_path)
@@ -175,9 +176,9 @@ if __name__ == "__main__":
                     objs = get_objects_from_json(truth_json_path)
                     for i in range(len(objs['id'])):
                         if break_stop: break
-                        cutout_data, cutout_wcs = make_cutout(big_array, wcs_roman, pos_radec=(objs['ra'][i], objs['dec'][i]), cutout_size=args.cutout_size)
+                        cutout_data, cutout_wcs = make_cutout(coadd_roman, wcs_roman, pos_radec=(objs['ra'][i], objs['dec'][i]), cutout_size=args.cutout_size)
                         if cutout_data is not None and np.isnan(cutout_data[0].min())==False:
-                            cutout_fname = f"{rubin_fname.strip('.npy').split('/')[-1]}_cut_{objs['id'][i]}.npy"
+                            cutout_fname = f"roman_YJH_{rubin_fname.strip('.npy').split('/')[-1]}_cut_{objs['id'][i]}.npy"
                             path = os.path.join(args.output, 'data', cutout_fname)
                             np.save(path, cutout_data.astype(np.float32))
                             annots['path'].append(path)
@@ -185,10 +186,10 @@ if __name__ == "__main__":
                             count +=1
                             if args.save_rubin_cutouts:
                                 rubin_cutout_data, rubin_cutout_wcs = make_cutout(coadd_rubin, wcs_rubin, pos_radec=(objs['ra'][i], objs['dec'][i]), \
-                                cutout_size=22) # true resample size, checked by eye, may reduce the amount of "None" cutouts
+                                cutout_size=35) # true resample size, checked by eye, may reduce the amount of "None" cutouts
                                 # cutout_size=np.ceil(args.cutout_size*(0.11/0.2)).astype(int)) # 0.2 rubin pixel scale, 0.11 roman pixel scale, so 64 pixel cutout is ~12.8 arcsec for rubin and ~7 arcsec for roman, rounding to nearest pixel
                                 if rubin_cutout_data is not None and np.isnan(rubin_cutout_data.min())==False:
-                                    rubin_cutout_fname = f"{rubin_fname.strip('.npy').split('/')[-1]}_cut_{objs['id'][i]}_rubin.npy"
+                                    rubin_cutout_fname = f"rubin_ugrizy_{rubin_fname.strip('.npy').split('/')[-1]}_cut_{objs['id'][i]}.npy"
                                     rubin_path = os.path.join(args.output, 'data', rubin_cutout_fname)
                                     np.save(rubin_path, rubin_cutout_data.astype(np.float32))
                                     annots['rubin_cutout_path'].append(rubin_path)
