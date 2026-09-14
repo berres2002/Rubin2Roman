@@ -3,6 +3,7 @@ from astropy import wcs
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.nddata import Cutout2D
+from astropy.nddata.utils import NoOverlapError, PartialOverlapError
 import os
 import pandas as pd
 from tqdm import tqdm
@@ -92,8 +93,11 @@ def make_cutout(img, wcs, pos_xy=None, pos_radec=None, cutout_size=64):
         cutout = Cutout2D(img[0], sc1, (cutout_size, cutout_size), wcs=wcs, mode='strict')
         cutout_slices = cutout.slices_original
         cutout_wcs = cutout.wcs
-    except:
-        print(f"Could not make cutout for source at ra={sc1.ra.deg}, dec={sc1.dec.deg}. Skipping this source.")
+    except PartialOverlapError:
+        print(f"Could not make cutout for source at ra={sc1.ra.deg}, dec={sc1.dec.deg}. Skipping this source. Partial overlap error.")
+        return None, None
+    except NoOverlapError:
+        print(f"Could not make cutout for source at ra={sc1.ra.deg}, dec={sc1.dec.deg}. Skipping this source. No overlap error.")
         return None, None
     if multiband:
         cutout_data = img[:, cutout_slices[0], cutout_slices[1]]
