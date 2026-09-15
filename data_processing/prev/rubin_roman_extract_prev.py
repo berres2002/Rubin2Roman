@@ -6,6 +6,8 @@ import numpy as np
 from astropy import wcs
 from astropy import units as u
 from astropy.coordinates import SkyCoord
+from astropy.wcs.utils import proj_plane_pixel_scales
+from astropy.nddata.utils import NoOverlapError, PartialOverlapError
 # from firefly_client import FireflyClient
 from astropy.nddata import Cutout2D
 # from itertools import product
@@ -156,6 +158,60 @@ def download_rubin(filters):
 def reproject_rubin_to_roman(rubin_ims, wcs_rubin, wcs_roman, coadd_roman):
     return reproject_interp((rubin_ims,wcs_rubin[0]),wcs_roman,shape_out=coadd_roman['data'].shape)
 
+def rescale_image(data, wcs, new_pixel_scale_arcsec, order="bilinear"):
+    """
+    Resample a 2D image onto a new grid with a different (square) pixel
+    scale, preserving the on-sky footprint, using reproject_interp.
+
+    Parameters
+    ----------
+    data : np.ndarray
+        2D image array.
+    wcs : astropy.wcs.WCS
+        WCS corresponding to `data`. Assumed to have units of degrees
+        (standard for RA---TAN/DEC--TAN type WCS).
+    new_pixel_scale_arcsec : float
+        Target pixel scale in arcsec/pixel.
+    order : str or int
+        Interpolation order passed to reproject_interp
+        ("nearest-neighbor", "bilinear", "biquadratic", "bicubic", or int).
+
+    Returns
+    -------
+    new_data : np.ndarray
+    new_wcs : astropy.wcs.WCS
+    """
+    band, ny, nx = data.shape
+
+    old_scale_deg = proj_plane_pixel_scales(wcs)  # [x, y] deg/pix
+    new_scale_deg = new_pixel_scale_arcsec*u.arcsec.to(u.deg)  # deg/pix
+
+    factor_x = old_scale_deg[0] / new_scale_deg
+    factor_y = old_scale_deg[1] / new_scale_deg
+
+    new_nx = int(round(nx * factor_x))
+    
+    new_ny = int(round(ny * factor_y))
+    # print(new_nx,new_ny)
+    new_wcs = wcs.deepcopy()
+
+    # keep reference world coordinate fixed at the same physical location
+    new_wcs.wcs.crpix = [
+        (wcs.wcs.crpix[0] -1.0) * factor_x +1.0,
+        (wcs.wcs.crpix[1]-1.0 ) * factor_y+1.0 ,
+    ]
+
+    if wcs.wcs.has_cd():
+        new_wcs.wcs.cd = wcs.wcs.cd / np.array([[factor_x, factor_y]]).T
+    else:
+        new_wcs.wcs.cdelt = wcs.wcs.cdelt / np.array([factor_x, factor_y])
+
+    new_data, _ = reproject_interp(
+        (data, wcs), new_wcs, shape_out=(new_ny, new_nx), order=order
+    )
+
+    return new_data, new_wcs
+
 def save_cutouts(img,cutout_fname,fpath,split_size):
     annots = {'path':[], 'img':[]}
     idx=np.linspace(0,img.shape[1],split_size+1,dtype=int)
@@ -213,19 +269,10 @@ def save_centered_cutouts(img, cutout_size=64, band_idx=None, fpath=None, cutout
                 raise ValueError(f"Provided path {fpath} does not exist. Please provide a valid path or set path to None to save in current working directory.")
     return annots
 
-def save_centered_cutouts_fromTable(table, img, wcs, cutout_size=64, fpath=None, cutout_fname='',c_annots=None):
-    annots = {'path':[], 'img':[], 'ra':[], 'dec':[]}
-    if img.ndim == 3:
-        multiband = True
-        #     image = img[band_idx] # use specified band for finding peaks to center cutouts on
-        # else:
-        #     raise ValueError("For 3D image cubes, please specify the band index to use for finding local peaks to center cutouts on.")
-    elif img.ndim == 2:
-        multiband = False
-        image = img
-    else:
-        raise ValueError("Input image must be either a 2D array or a 3D cube with shape (bands, height, width)")
-    ra_min, ra_max, dec_min, dec_max = get_radec_bounds(wcs)
+def save_centered_cutouts_fromTable(table, roman_img, roman_wcs, rubin_img, rubin_wcs, roman_cutout_size=64, rubin_cutout_size=35, fpath=None, cutout_fname='',c_annots=None):
+    annots = {'path':[], 'img':[], 'ra':[], 'dec':[], 'rubin_path':[], 'rubin_img':[]}
+    multiband = True if roman_img.ndim == 3 else False
+    ra_min, ra_max, dec_min, dec_max = get_radec_bounds(roman_wcs)
     tqi = table.query(f"ra > {ra_min} and ra < {ra_max} and dec > {dec_min} and dec < {dec_max}")
     for row in tqi[['ra','dec']].to_numpy():
         if c_annots is not None:
@@ -233,27 +280,38 @@ def save_centered_cutouts_fromTable(table, img, wcs, cutout_size=64, fpath=None,
                 print(f"Source at ra={row[0]}, dec={row[1]} already has a cutout, skipping this source.")
                 continue
         try:
-            cutout = Cutout2D(img[-1], SkyCoord(ra=row[0], dec=row[1],unit='deg'), (cutout_size, cutout_size), wcs=wcs, mode='strict').slices_original
-        except:
-            print(f"Could not make cutout for source at ra={row[0]}, dec={row[1]}. Skipping this source.")
+            sc1 = SkyCoord(ra=row[0], dec=row[1],unit='deg')
+            roman_cutout = Cutout2D(roman_img[-1], sc1, (roman_cutout_size, roman_cutout_size), wcs=roman_wcs, mode='strict').slices_original
+            rubin_cutout = Cutout2D(rubin_img[-1], sc1, (rubin_cutout_size, rubin_cutout_size), wcs=rubin_wcs, mode='strict').slices_original
+        except PartialOverlapError:
+            print(f"Could not make cutout for source at ra={row[0]}, dec={row[1]}. Skipping this source. Partial overlap error occurred.")
+            continue
+        except NoOverlapError:
+            print(f"Could not make cutout for source at ra={row[0]}, dec={row[1]}. Skipping this source. No overlap error occurred.")
             continue
         # save cutout
         if multiband:
-            cutout_data = img[:, cutout[0], cutout[1]]
-        else:
-            cutout_data = img[cutout[0], cutout[1]]
+            roman_cutout_data = roman_img[:, roman_cutout[0], roman_cutout[1]]
+            rubin_cutout_data = rubin_img[:, rubin_cutout[0], rubin_cutout[1]]
+        # else:
+        #     cutout_data = img[cutout[0], cutout[1]]
         if fpath is not None:
             if os.path.exists(fpath):
-                if row[1]<0:
-                    dec_str = f"{row[1]*-1:0.4f}"
-                else:
-                    dec_str = f"{row[1]:0.4f}"
-                fname = cutout_fname+f"_cut_{row[0]:0.4f}_{dec_str}.npy"
-                save_path = os.path.join(fpath, 'data', fname)
+                # if row[1]<0:
+                #     dec_str = f"{row[1]*-1:0.4f}"
+                # else:
+                #     dec_str = f"{row[1]:0.4f}"
+                roman_fname = "YJH_"+cutout_fname+f"_cut_{row[0]:0.4f}_{row[1]:0.4f}.npy"
+                roman_save_path = os.path.join(fpath, 'data', roman_fname)
+                rubin_fname = "ugrizy_"+cutout_fname+f"_cut_{row[0]:0.4f}_{row[1]:0.4f}.npy"
+                rubin_save_path = os.path.join(fpath, 'data', rubin_fname)
 
-                np.save(save_path, cutout_data.astype(np.float32))
-                annots['path'].append(save_path)
-                annots['img'].append(fname)
+                np.save(roman_save_path, roman_cutout_data.astype(np.float32))
+                np.save(rubin_save_path, rubin_cutout_data.astype(np.float32))
+                annots['path'].append(roman_save_path)
+                annots['img'].append(roman_fname)
+                annots['rubin_path'].append(rubin_save_path)
+                annots['rubin_img'].append(rubin_fname)
                 annots['ra'].append(row[0])
                 annots['dec'].append(row[1])
             else: 
@@ -264,10 +322,10 @@ def download_roman(coords, filter_roman, rubin_ims, wcs_rubin, fpath=None, split
     # roman_ims = []
     # wcs_roman = []
     #allocate big array
-    annots = {'path':[], 'img':[], 'ra':[], 'dec':[]}
-    nogals = False
+    annots = {'path':[], 'img':[], 'ra':[], 'dec':[], 'rubin_path':[], 'rubin_img':[]}
+    # nogals = False
     for coord in tqdm(coords):
-        big_array = np.zeros((9 , 2688, 2688))
+        big_array = np.zeros((3 , 2688, 2688))
         for i,filter in enumerate(filter_roman):
             coadd_roman,coadd_fname = get_roman_coadd(coord, filter)
             coadd_data = coadd_roman['data']
@@ -280,25 +338,37 @@ def download_roman(coords, filter_roman, rubin_ims, wcs_rubin, fpath=None, split
         #         nogals = True
         #         break
         #     # end annoying query
-            big_array[i-3]=coadd_data
+            big_array[i]=coadd_data
         # #annoying check here
         # if nogals:
         #     nogals = False
         #     continue
         # #end annoying check
         # rubin shape (6, 2688, 2688)
-        rubin_reprojected,_ = reproject_rubin_to_roman(rubin_ims, wcs_rubin, roman_wcs, coadd_roman)
-        if np.isnan(rubin_reprojected[0].min()) ==False:
-            big_array[:6]=rubin_reprojected
+        # rubin_reprojected,_ = reproject_rubin_to_roman(rubin_ims, wcs_rubin, roman_wcs, coadd_roman)
+        roman_reprojected, roman_reprojected_wcs = rescale_image(big_array, roman_wcs, new_pixel_scale_arcsec=0.11, order="bilinear")
+        if np.isnan(roman_reprojected[0].min()) ==False:
+            # big_array[:6]=rubin_reprojected
             name_split = coadd_fname.split('_')
-            cutout_fname = f"ugrizy_YJH_{name_split[2]}_{name_split[3]}_map"
+            cutout_fname = f"{name_split[2]}_{name_split[3]}_map"
             # ans = save_cutouts(big_array, cutout_fname, fpath, split_size=split_size)
             # ans = save_centered_cutouts(big_array, cutout_size=64, band_idx=-1, fpath=fpath, cutout_fname=cutout_fname)
-            ans = save_centered_cutouts_fromTable(table, big_array, roman_wcs, cutout_size=64, fpath=fpath, cutout_fname=cutout_fname, c_annots=annots)
+            ans = save_centered_cutouts_fromTable(table, 
+                                roman_img=roman_reprojected, 
+                                roman_wcs=roman_reprojected_wcs,
+                                rubin_img=rubin_ims, 
+                                rubin_wcs=wcs_rubin, 
+                                roman_cutout_size=64,
+                                rubin_cutout_size=35,
+                                fpath=fpath,
+                                cutout_fname=cutout_fname, 
+                                c_annots=annots)
             annots['path'].extend(ans['path'])
             annots['img'].extend(ans['img'])
             annots['ra'].extend(ans['ra'])
             annots['dec'].extend(ans['dec'])
+            annots['rubin_path'].extend(ans['rubin_path'])
+            annots['rubin_img'].extend(ans['rubin_img'])
         if len(annots['path']) > max_images and max_images>0: # stop after we have downloaded a certain number of cutouts to avoid memory issues and set max_images to -1 to download all cutouts
             print(f"Reached max number of images N = {max_images}, stopping download.")
             break
@@ -310,7 +380,7 @@ def download_roman(coords, filter_roman, rubin_ims, wcs_rubin, fpath=None, split
 
 if __name__ == "__main__":
     # annots = {'path':[], 'img':[]}
-    fpath = '/work/hdd/bfpq/aberres2/brightest_gals_cutouts_64'
+    fpath = '/work/hdd/bfpq/rubin2roman/datasets/open_universe_prev_brightest_gals'
     # fpath = '/Users/aberres/Desktop/research/rubin2roman/data/table_demo'
     # coords=[]
     x,y=np.meshgrid(ra_block_centers[2:-2], dec_block_centers[2:-2]) # only use the full 8 by 8 Roman blocks that cover the full Rubin preview area
