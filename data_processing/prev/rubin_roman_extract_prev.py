@@ -282,7 +282,7 @@ def save_centered_cutouts_fromTable(table, roman_img, roman_wcs, rubin_img, rubi
         try:
             sc1 = SkyCoord(ra=row[0], dec=row[1],unit='deg')
             roman_cutout = Cutout2D(roman_img[-1], sc1, (roman_cutout_size, roman_cutout_size), wcs=roman_wcs, mode='strict').slices_original
-            rubin_cutout = Cutout2D(rubin_img[-1], sc1, (rubin_cutout_size, rubin_cutout_size), wcs=rubin_wcs, mode='strict').slices_original
+            rubin_cutout = Cutout2D(rubin_img[-1], sc1, (rubin_cutout_size, rubin_cutout_size), wcs=rubin_wcs[-1], mode='strict').slices_original
         except PartialOverlapError:
             print(f"Could not make cutout for source at ra={row[0]}, dec={row[1]}. Skipping this source. Partial overlap error occurred.")
             continue
