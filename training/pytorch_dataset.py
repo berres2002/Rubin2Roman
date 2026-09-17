@@ -96,9 +96,9 @@ class CustomImageDatasetYJH(Dataset):
         # image = decode_image(img_path)
         # mult_val = 1/159.23617710583153
         if self.mult_val is not None:
-            image_full = torch.from_numpy(np.load(img_path)[6:]) * self.mult_val # shape (9, 64, 64) for 9 channels (6 Rubin + 3 Roman) and 64x64 cutout size
+            image_full = torch.from_numpy(np.load(img_path)) * self.mult_val # shape (3, 64, 64) for 3 channels (3 Roman) and 64x64 cutout size
         else:
-            image_full = torch.from_numpy(np.load(img_path)[6:]) # shape (9, 64, 64) for 9 channels (6 Rubin + 3 Roman) and 64x64 cutout size
+            image_full = torch.from_numpy(np.load(img_path)) # shape (3, 64, 64) for 3 channels (3 Roman) and 64x64 cutout size
         # image_cond = image_full[:6] # Rubin channels as conditioning information
         image = image_full # Roman channels as
         # image=image.unsqueeze(0)  # Add channel dimension if needed
