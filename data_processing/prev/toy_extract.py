@@ -197,34 +197,36 @@ def make_cutout(img, wcs, coord, cutout_size=64):
 def init_argparse():
     import argparse
     parser = argparse.ArgumentParser(description="Script to extract cutouts from Rubin and Roman coadds for training and evaluation of Rubin-to-Roman image translation models.")
-    parser.add_argument('--make_cutouts', action=argparse.BooleanOptionalAction, help='Whether to make cutouts from the coadd images. If False, the script will only add the paths to the full coadd images to the annotations file without making cutouts.')
-    parser.add_argument('--save_rubin_cutouts', action=argparse.BooleanOptionalAction, help='Whether to save the not-reprojected Rubin cutouts along with the reprojected Rubin cutouts.')
-    parser.add_argument('--cutout_size', type=int, default=64, help='Size of the square cutouts to extract (in pixels).')
-    parser.add_argument('--rubin_img_dir', type=str, default='/work/hdd/bdsp/yse2/lsst_data/truth', help='Directory containing the Rubin coadd .npy files organized in subdirectories by tract and patch.')
-    parser.add_argument('--roman_img_dir', type=str, default='/work/hdd/bdsp/yse2/truth-roman', help='Directory containing the Roman coadd .npy files organized in subdirectories by tract and patch.')
-    parser.add_argument('--output', type=str, help='Directory where the extracted cutouts and annotations will be saved.')
+    # parser.add_argument('--make_cutouts', action=argparse.BooleanOptionalAction, help='Whether to make cutouts from the coadd images. If False, the script will only add the paths to the full coadd images to the annotations file without making cutouts.')
+    # parser.add_argument('--save_rubin_cutouts', action=argparse.BooleanOptionalAction, help='Whether to save the not-reprojected Rubin cutouts along with the reprojected Rubin cutouts.')
+    parser.add_argument('--cutout_size', type=int, default=35, help='Size of the square cutouts to extract (in pixels).')
+    # parser.add_argument('--rubin_img_dir', type=str, default='/work/hdd/bdsp/yse2/lsst_data/truth', help='Directory containing the Rubin coadd .npy files organized in subdirectories by tract and patch.')
+    # parser.add_argument('--roman_img_dir', type=str, default='/work/hdd/bdsp/yse2/truth-roman', help='Directory containing the Roman coadd .npy files organized in subdirectories by tract and patch.')
+    parser.add_argument('--annotations_csv',type=str,required=True)
+    parser.add_argument('--output', type=str, required=True, help='Directory where the extracted cutouts and annotations will be saved.')
     # parser.add_argument('--dir_list_path', type=str, default='dir_list.pkl', help='Path to the pickle file containing the list of directories to process.')
-    parser.add_argument('--roman_wcs_json_path', type=str, default='/projects/bfhm/yse2/annotations_roman/all_wcs.json', help='Path to the JSON file containing WCS information for the Roman data.')
-    parser.add_argument('--n_test',type=int,default=None)
+    # parser.add_argument('--roman_wcs_json_path', type=str, default='/projects/bfhm/yse2/annotations_roman/all_wcs.json', help='Path to the JSON file containing WCS information for the Roman data.')
+    # parser.add_argument('--n_test',type=int,default=None)
     return parser.parse_args()
 
 if __name__ == "__main__":
     t1 = datetime.now()
     args = init_argparse()
-    os.makedirs(args.output,exist_ok=True)
-    if args.make_cutouts:
-        os.makedirs(os.path.join(args.output,'data'),exist_ok=True)
-    ann_path =os.path.join(args.output, 'test1_rubin_annotations.csv')
+    # os.makedirs(args.output,exist_ok=True)
+    # if args.make_cutouts:
+    #     os.makedirs(os.path.join(args.output,'data'),exist_ok=True)
+    ann_path =os.path.join(args.output, args.annotations_csv)
     df = pd.read_csv(ann_path)
     annots = {'var_path':[]}
     filter_rubin = ['u','g','r','i','z','y']
     print("Downloading Rubin coadds...")
     rubin_ims, wcs_rubin = download_rubin(filter_rubin)
+    print("Rubin coadds downloaded. Extracting cutouts...")
     for i in tqdm(range(len(df))):
         row = df.iloc[i]
         ra, dec = row['ra'], row['dec']
         sc1 = SkyCoord(ra=ra, dec=dec, unit='deg')
-        cutout,_ = make_cutout(rubin_ims, wcs_rubin[0], coord=sc1, cutout_size=32)
+        cutout,_ = make_cutout(rubin_ims, wcs_rubin[0], coord=sc1, cutout_size=args.cutout_size)
         np.save(os.path.join(args.output,'data',f"rubin_ugrizy_var_{ra:0.4f}_{dec:0.4f}.npy"), cutout)
         annots['var_path'].append(os.path.join(args.output,'data',f"rubin_ugrizy_var_{ra:0.4f}_{dec:0.4f}.npy"))
         # annots['img'].append(f"rubin_ugrizy_{ra:0.4f}_{dec:0.4f}.npy")
