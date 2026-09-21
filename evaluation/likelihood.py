@@ -19,20 +19,36 @@ import torch.nn as nn
 
 
 
-with open('/projects/bfpq/rubin2roman/psf_arr_y.pkl', 'rb') as f:
-    # global gs_psf
-    gs_psf = pickle.load(f)
+# with open('/projects/bfpq/rubin2roman/psf_arr_y.pkl', 'rb') as f:
+#     # global gs_psf
+#     gs_psf = pickle.load(f)
     # gs_psf = gs_psf.withFlux(1.0)  # ensure unit flux
     # gs_psf = torch.from_numpy(gs_psf.drawImage(nx=64, ny=64, scale=0.11, method='auto').array)  # convert to torch tensor
 
-mult_val = 1/159.23617710583153
+# mult_val = 1/159.23617710583153
+with open('/projects/bfpq/rubin2roman/rubin_psf_y35.npy', 'rb') as f:
+    # global gs_psf
+    gs_psf = np.load(f)
+
+def overlap_matrix(n_in, s_in, n_out, s_out, dtype=torch.float32, device="cuda"):
+    """Area-weighted 1-D rebin. y_a = sum_i W[a,i] x_i, flux-conserving.
+    Grids share a common center."""
+    e_in  = (np.arange(n_in  + 1) - n_in  / 2.0) * s_in
+    e_out = (np.arange(n_out + 1) - n_out / 2.0) * s_out
+    lo = np.maximum(e_out[:-1, None], e_in[None, :-1])
+    hi = np.minimum(e_out[1:,  None], e_in[None, 1:])
+    W  = np.clip(hi - lo, 0.0, None) / s_in
+    return torch.as_tensor(W, dtype=dtype, device=device)
 
 class PhysModel(nn.Module):
     def __init__(self, device='cuda'):
         super().__init__()
         self.device = device
         self.gs_psf = gs_psf
-        self.mult_val = mult_val
+        self.register_buffer("Wr", overlap_matrix(64, 0.11, 35, 0.20, device=device))
+        self.register_buffer("Wc", overlap_matrix(64, 0.11, 35, 0.20, device=device))
+        self.w = torch.as_tensor([1,1,1], dtype=torch.float32,device=device)
+        # self.mult_val = mult_val
 
     def convolve_with_psf(self,x, flip_kernel=True):
         """
@@ -81,17 +97,21 @@ class PhysModel(nn.Module):
         # convolved = galsim.Convolve([galaxy, gs_psf])
         # result_image = convolved.drawImage(nx=64, ny=64, scale=0.2, method='auto')
         # result_array = result_image.array
-        pool = nn.AvgPool2d(kernel_size=2, stride=2)
+        # pool = nn.AvgPool2d(kernel_size=2, stride=2)
         # result_array = torch.from_numpy(result_array)
-        x = pool(x)
+        # x = pool(x)
+        x = self.Wr @ x            # (N, C, H_out, W_in)
+        x = x @ self.Wc.transpose(-1, -2)   # (N, C, H_out, W_out)
         # mu_t = torch.exp(0.25* t*(beta_min*(-2+t)-beta_max*t))
         # mu_t = torch.exp(0.25* t*(beta_min*(-2+t)-beta_max*t))
         # ln_score = y*mu_t - out
         # print("forward out:", x.requires_grad, x.grad_fn)
-        return x/108
+        x = (self.w.view(1, 3, 1, 1) * x).sum(dim=1, keepdim=True)
+        return x#/108
+
 with torch.no_grad():
     fwd_model = PhysModel(device='cuda')
-    jacobian = torch.func.jacrev(lambda a: fwd_model(a[None]).squeeze(0))(torch.ones(3,*gs_psf.shape,device='cuda', dtype=torch.float32))
+    jacobian = torch.func.jacrev(lambda a: fwd_model(a[None]).squeeze(0))(torch.ones(3,64,64,device='cuda', dtype=torch.float32))
     AAT = torch.sum(jacobian**2, dim=(-3,-2,-1))[None]
 # AAT = torch.sum()
 
