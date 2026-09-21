@@ -76,6 +76,13 @@ if __name__ == "__main__":
         rubin_df = pd.read_csv(args.test_rubin_csv)
         rubin_paths = np.array(rubin_df['path'].values)
         rubin_var_paths = np.array(rubin_df['var_path'].values)
+    elif 'rubin_path' in df.columns and 'var_path' in df.columns:
+        rubin_paths = np.array(df['rubin_path'].values)
+        rubin_var_paths = np.array(df['var_path'].values)
+    else:
+        rubin_paths = None
+        rubin_var_paths = None
+        print("No Rubin catalog data provided. Rubin catalog features will not be evaluated.")
     # img_names = df['img'].values
     # randomize the order of the paths
     np.random.seed(42069)
@@ -107,7 +114,7 @@ if __name__ == "__main__":
             full_samp = samples.cpu().numpy()
             full_samp_nn = AsinhReverseNormalize(full_samp)
         elif args.model_type == 'likelihood':
-            mult_val = 1/159.23617710583153
+            # mult_val = 1/159.23617710583153
             rubin_img = np.load(rubin_paths[idx])
             rubin_var = np.load(rubin_var_paths[idx])
             lf1 = likelihood(rubin_img, rubin_var, (args.n_samples,3,64,64), sde=model.sde, device=model.device)
