@@ -107,7 +107,7 @@ class PhysModel(nn.Module):
         # ln_score = y*mu_t - out
         # print("forward out:", x.requires_grad, x.grad_fn)
         x = (self.w.view(1, 3, 1, 1) * x).sum(dim=1, keepdim=True)
-        return x#/108
+        return x/78.79886#/108
 
 with torch.no_grad():
     fwd_model = PhysModel(device='cuda')
