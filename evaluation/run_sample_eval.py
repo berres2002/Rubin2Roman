@@ -155,14 +155,25 @@ if __name__ == "__main__":
             continue
         dd1['cutout_id'].append(name)
         dd2['roman']['id'].append(name)
-        pred_morph = get_morph(out1)
-        roman_morph = get_morph(timg)
+        try:
+            pred_morph = get_morph(out1)
+            roman_morph = get_morph(timg)
+        except:
+            print(f'Morphology measurement failed for source {name}, Skipping...')
+            pred_morph = None
+            roman_morph = None
         cols = pred_morph.keys()
         bands = ['Y','J','H']
-        for j in range(len(bands)):
-            for k in range(len(cols)):
-                dd1[f'pred_{cols[k]}_{bands[j]}'].append(np.float64(pred_morph[j][cols[k]]))
-                dd1[f'roman_{cols[k]}_{bands[j]}'].append(np.float64(roman_morph[j][cols[k]]))
+        if pred_morph is not None or roman_morph is not None:
+            for j in range(len(bands)):
+                for k in range(len(cols)):
+                    dd1[f'pred_{cols[k]}_{bands[j]}'].append(np.float64(pred_morph[j][cols[k]]))
+                    dd1[f'roman_{cols[k]}_{bands[j]}'].append(np.float64(roman_morph[j][cols[k]]))
+        else:
+            for j in range(len(bands)):
+                for k in range(len(cols)):
+                    dd1[f'pred_{cols[k]}_{bands[j]}'].append(None)
+                    dd1[f'roman_{cols[k]}_{bands[j]}'].append(None)
         out_norm = normalize_unit(s_median)
         im_norm = normalize_unit(timg) # Normalize the target image (last 3 channels)
         # save some of the model outputs REMOVE WHEN NOT TESTING
