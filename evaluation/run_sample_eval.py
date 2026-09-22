@@ -162,7 +162,7 @@ if __name__ == "__main__":
             print(f'Morphology measurement failed for source {name}, Skipping...')
             pred_morph = None
             roman_morph = None
-        cols = pred_morph.keys()
+        cols = ['semimajor_axis','semiminor_axis','orientation','ellipticity','kron_flux']
         bands = ['Y','J','H']
         if pred_morph is not None or roman_morph is not None:
             for j in range(len(bands)):
