@@ -3,4 +3,4 @@ notebooks/
 *ipynb
 .DS_Store
 CLAUDE.md
-ipynb_checkpoints/
+.ipynb_checkpoints/

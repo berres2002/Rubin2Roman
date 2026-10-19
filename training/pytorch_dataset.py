@@ -169,3 +169,36 @@ class CustomImageDatasetYJHSumNorm(Dataset):
         if self.target_transform:
             label = self.target_transform(label)
         return image
+
+class CustomImageDatasetY(Dataset):
+    def __init__(self, annotations_file, img_dir, mult_val=None, transform=None, target_transform=None,norm='None'):
+        self.img_labels = pd.read_csv(annotations_file) # This file contain image filenames
+        self.img_dir = img_dir
+        self.transform = transform
+        self.target_transform = target_transform
+        self.mult_val = mult_val
+
+    def __len__(self):
+        return len(self.img_labels)
+
+    def __getitem__(self, idx):
+        img_path = os.path.join(self.img_labels.iloc[idx,0]) # Point this to individual image paths
+        # image = decode_image(img_path)
+        # mult_val = 1/159.23617710583153
+        if self.mult_val is not None:
+            image_full = torch.from_numpy(np.load(img_path)[0]) * self.mult_val # shape (3, 64, 64) for 3 channels (3 Roman) and 64x64 cutout size
+        else:
+            image_full = torch.from_numpy(np.load(img_path)[0]) # shape (3, 64, 64) for 3 channels (3 Roman) and 64x64 cutout size
+        # image_cond = image_full[:6] # Rubin channels as conditioning information
+        if self.norm == 'Sum':
+            image_full = (image_full/image_full.sum())*64**2 # Normalize each channel by its sum
+        image = image_full # Roman channels as
+        image=image.unsqueeze(0)  # Add channel dimension if needed
+        image = image.to(device='cpu')  # Load .npy file as tensor
+        # image_cond = image_cond.to(device='cuda')  # Load .npy file as tensor
+        # label = self.img_labels.iloc[idx, 1]
+        if self.transform:
+            image = self.transform(image)
+        if self.target_transform:
+            label = self.target_transform(label)
+        return image
