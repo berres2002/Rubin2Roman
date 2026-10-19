@@ -177,6 +177,7 @@ class CustomImageDatasetY(Dataset):
         self.transform = transform
         self.target_transform = target_transform
         self.mult_val = mult_val
+        self.norm = norm
 
     def __len__(self):
         return len(self.img_labels)
