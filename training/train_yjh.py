@@ -1,7 +1,7 @@
 from score_models.score_model import ScoreModel
 from score_models.architectures import DDPM, NCSNpp
 # from cond_dataset_demo import CustomImageDataset
-from pytorch_dataset import CustomImageDatasetYJH, CustomImageDatasetYJHAsinh
+from pytorch_dataset import CustomImageDatasetYJH, CustomImageDatasetYJHAsinh, CustomImageDatasetYJHSumNorm
 import pickle
 import os
 import torch.multiprocessing as mp
@@ -16,7 +16,7 @@ def init_argparse():
     parser.add_argument('--batch_size', type=int, default=64, help='Batch size for training.')
     parser.add_argument('--learning_rate', type=float, default=1e-4, help='Learning rate for the optimizer.')
     parser.add_argument('--num_workers', type=int, default=4, help='Number of workers for data loading.')
-    parser.add_argument('--data_norm', type=str, default='None', choices=['None', 'Asinh', 'mult_val'], help='Normalization method for the data. Choose "None" for no normalization or "Asinh" for Asinh normalization.')
+    parser.add_argument('--data_norm', type=str, default='None', choices=['None', 'Asinh', 'mult_val', 'Sum'], help='Normalization method for the data. Choose "None" for no normalization or "Asinh" for Asinh normalization.')
     parser.add_argument('--sigma_min', type=float, default=None, help='Minimum sigma value for the VE SDE.')
     parser.add_argument('--sigma_max', type=float, default=None, help='Maximum sigma value for the VE SDE.')
     parser.add_argument('--beta_min', type=float, default=None, help='Minimum beta value for the VP SDE.')
@@ -33,6 +33,8 @@ def main(args):
     elif args.data_norm == 'mult_val':
         mult_val = 1/159.23617710583153
         dataset = CustomImageDatasetYJH(annotations_file=args.annotations_file, img_dir=args.img_dir, mult_val=mult_val)
+    elif args.data_norm == 'Sum':
+        dataset = CustomImageDatasetYJHSumNorm(annotations_file=args.annotations_file, img_dir=args.img_dir)
 
     checkpoints_directory = args.checkpoints_directory
     if os.path.exists(checkpoints_directory):
