@@ -142,6 +142,7 @@ class CustomImageDatasetYJHAsinh(Dataset):
 class CustomImageDatasetYJHSumNorm(Dataset):
     def __init__(self, annotations_file, img_dir, transform=None, target_transform=None):
         self.img_labels = pd.read_csv(annotations_file) # This file contain image filenames
+        self.paths = self.img_labels.iloc[:, 0].tolist()  # Assuming the first column contains the paths
         self.img_dir = img_dir
         self.transform = transform
         self.target_transform = target_transform
@@ -150,7 +151,8 @@ class CustomImageDatasetYJHSumNorm(Dataset):
         return len(self.img_labels)
 
     def __getitem__(self, idx):
-        img_path = os.path.join(self.img_labels.iloc[idx,0]) # Point this to individual image paths
+        # img_path = os.path.join(self.img_labels.iloc[idx,0]) # Point this to individual image paths
+        img_path = self.paths[idx]  # Get the path from the list of paths
         # image = decode_image(img_path)
         # mult_val = 1/159.23617710583153
         image_full = torch.from_numpy(np.load(img_path)) # shape (3, 64, 64) for 3 channels (3 Roman) and 64x64 cutout size
@@ -173,6 +175,7 @@ class CustomImageDatasetYJHSumNorm(Dataset):
 class CustomImageDatasetY(Dataset):
     def __init__(self, annotations_file, img_dir, mult_val=None, transform=None, target_transform=None,norm='None'):
         self.img_labels = pd.read_csv(annotations_file) # This file contain image filenames
+        self.paths = self.img_labels.iloc[:, 0].tolist()  # Assuming the first column contains the paths
         self.img_dir = img_dir
         self.transform = transform
         self.target_transform = target_transform
@@ -183,7 +186,8 @@ class CustomImageDatasetY(Dataset):
         return len(self.img_labels)
 
     def __getitem__(self, idx):
-        img_path = os.path.join(self.img_labels.iloc[idx,0]) # Point this to individual image paths
+        # img_path = os.path.join(self.img_labels.iloc[idx,0]) # Point this to individual image paths
+        img_path = self.paths[idx]  # Get the path from the list of paths
         # image = decode_image(img_path)
         # mult_val = 1/159.23617710583153
         if self.mult_val is not None:
