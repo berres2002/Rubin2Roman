@@ -131,7 +131,8 @@ if __name__ == "__main__":
         # out1 = normalize_center(s_median)
         # im_norm = normalize_center(fimg[6:]) # Normalize the target image (last 3 channels)
         out1 = s_median
-        timg = img
+        # Alex's normalization method for model output images multiplied by 35^2 as half the pixels went through the forward model.
+        timg = (img/img.sum(axis=(1,2), keepdims=True))*35**2
         if abs(out1).max() == np.inf or abs(timg).max() == np.inf:
             print('Normalization produced inf values. Skipping.')
             continue
@@ -141,8 +142,8 @@ if __name__ == "__main__":
             print('Peak finding algorithm failed for predicted source. Skipping...')
             fail_counter+=1
             save_path = f"/work/hdd/bfpq/aberres2/failed_eval_ims/test2/pred_fail{fail_counter}.npy"
-            print(f'Saving images as {save_path}')
-            np.save(save_path,np.vstack((out1,timg)))
+            # print(f'Saving images as {save_path}')
+            # np.save(save_path,np.vstack((out1,timg)))
             continue
         try:
             im_cens = GetCenterPeak(timg)
@@ -150,8 +151,8 @@ if __name__ == "__main__":
             print('Peak finding algorithm failed for Roman source. Skipping...')
             fail_counter+=1
             save_path = f"/work/hdd/bfpq/aberres2/failed_eval_ims/test2/roman_fail{fail_counter}.npy"
-            print(f'Saving images as {save_path}')
-            np.save(save_path,np.vstack((out1,timg)))
+            # print(f'Saving images as {save_path}')
+            # np.save(save_path,np.vstack((out1,timg)))
             continue
         dd1['cutout_id'].append(name)
         dd2['roman']['id'].append(name)
@@ -203,8 +204,8 @@ if __name__ == "__main__":
         dd1['pred_HLR_H'].append(samp_hlr[2])
         # TODO: Figure out radius for aperture photometry for flux measurement
         # Choosing a radius of 10 pixels
-        im_flux,im_flux_errs = get_aperture_fluxes(timg, im_cens[:,0], im_cens[:,1], radius=10)
-        samp_flux, samp_flux_errs = get_aperture_fluxes(out1, out_cens[:,0], out_cens[:,1], radius=10)
+        im_flux,im_flux_errs = get_aperture_fluxes(timg, im_cens[:,0], im_cens[:,1], radius=5)
+        samp_flux, samp_flux_errs = get_aperture_fluxes(out1, out_cens[:,0], out_cens[:,1], radius=5)
         dd1['roman_flux_Y'].append(im_flux[0])
         dd1['roman_flux_J'].append(im_flux[1])
         dd1['roman_flux_H'].append(im_flux[2])
