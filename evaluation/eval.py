@@ -75,13 +75,14 @@ def psnr(images1: np.ndarray, images2: np.ndarray) -> np.ndarray:
         Returns PSNR between each corresponding iamge as an array of shape `N`.
     """
     n, h, w = images1.shape
-    assert images1.min() >= 0 and images2.min() >= 0
+    # assert images1.min() >= 0 and images2.min() >= 0
     assert (n, h, w) == images2.shape
     psnr_ = np.zeros(n)
     for ii in range(n):
-        im1 = images1[ii] / images1[ii].max()
-        im2 = images2[ii] / images2[ii].max()
-        psnr_[ii] = peak_signal_noise_ratio(im1, im2, data_range=1)
+        im1 = images1[ii] #/ images1[ii].max()
+        im2 = images2[ii] #/ images2[ii].max()
+        dr2 = images2[ii].max() - images2[ii].min()
+        psnr_[ii] = peak_signal_noise_ratio(im1, im2, data_range=dr2)
     return psnr_
 
 

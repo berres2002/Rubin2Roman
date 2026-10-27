@@ -175,12 +175,12 @@ if __name__ == "__main__":
                 for k in range(len(cols)):
                     dd1[f'pred_{cols[k]}_{bands[j]}'].append(None)
                     dd1[f'roman_{cols[k]}_{bands[j]}'].append(None)
-        out_norm = normalize_unit(s_median)
-        im_norm = normalize_unit(timg) # Normalize the target image (last 3 channels)
+        # out_norm = normalize_unit(s_median)
+        # im_norm = normalize_unit(timg) # Normalize the target image (last 3 channels)
         # save some of the model outputs REMOVE WHEN NOT TESTING
         # np.save(f'/work/hdd/bfpq/aberres2/test_eval_imgs/pred_{i}.npy',out1)
         # np.save(f'/work/hdd/bfpq/aberres2/test_eval_imgs/roman_{i}.npy',im_norm)
-        psnr_val = psnr(out_norm, im_norm)
+        psnr_val = psnr(timg, s_median)
         dd1['psnr_Y'].append(psnr_val[0])
         dd1['psnr_J'].append(psnr_val[1])
         dd1['psnr_H'].append(psnr_val[2])
