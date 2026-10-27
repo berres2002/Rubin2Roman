@@ -184,7 +184,7 @@ if __name__ == "__main__":
         dd1['psnr_Y'].append(psnr_val[0])
         dd1['psnr_J'].append(psnr_val[1])
         dd1['psnr_H'].append(psnr_val[2])
-        ssim_val = struct_sim(out_norm, im_norm)
+        ssim_val = struct_sim(timg, s_median)
         dd1['ssim_Y'].append(ssim_val[0])
         dd1['ssim_J'].append(ssim_val[1])
         dd1['ssim_H'].append(ssim_val[2])

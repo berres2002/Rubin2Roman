@@ -88,9 +88,6 @@ def psnr(images1: np.ndarray, images2: np.ndarray) -> np.ndarray:
 def struct_sim(images1: np.ndarray, images2: np.ndarray, **kwargs) -> np.ndarray:
     """Compute structural similarity index from skimage.
 
-    By default, we normalize the images to be between 0 and 1. So that the
-    `data_range` is 1.
-
     Args:
         images1: Array of shape `NHW` containing `N` images each of
                         size `NHW`.
@@ -103,21 +100,22 @@ def struct_sim(images1: np.ndarray, images2: np.ndarray, **kwargs) -> np.ndarray
         Returns structural similarity index between each corresponding iamge as
         an array of shape `N`.
     """
-    assert images1.min() >= 0 and images2.min() >= 0
+    # assert images1.min() >= 0 and images2.min() >= 0
     n, h, w = images1.shape
     assert (n, h, w) == images2.shape
     ssim = np.zeros(n)
     if 'full' in kwargs:
         Sims = np.zeros_like(images1)
     for ii in range(n):
-        im1 = images1[ii] / images1[ii].max()
-        im2 = images2[ii] / images2[ii].max()
+        im1 = images1[ii] #/ images1[ii].max()
+        im2 = images2[ii] #/ images2[ii].max()
+        dr2 = images2[ii].max() - images2[ii].min()
         if 'full' in kwargs:
-            ssim, S= structural_similarity(im1, im2, data_range=1, **kwargs)
+            ssim, S= structural_similarity(im1, im2, data_range=dr2, **kwargs)
             ssim[ii] = ssim
             Sims[ii] = S
         else:
-            ssim[ii] = structural_similarity(im1, im2, data_range=1, **kwargs)
+            ssim[ii] = structural_similarity(im1, im2, data_range=dr2, **kwargs)
     if 'full' in kwargs:
         return ssim, Sims
     else:
