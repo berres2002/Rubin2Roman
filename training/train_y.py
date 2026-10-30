@@ -1,7 +1,7 @@
 from score_models.score_model import ScoreModel
 from score_models.architectures import DDPM, NCSNpp
 # from cond_dataset_demo import CustomImageDataset
-from pytorch_dataset import CustomImageDatasetY
+from pytorch_dataset import H5ImageDataset
 import pickle
 import os
 import torch.multiprocessing as mp
@@ -26,7 +26,8 @@ def init_argparse():
 
 def main(args):
     # dataset = CustomImageDataset(annotations_file='/projects/bfpq/work/aberres2/demo_roman_rubin_fix/annotations.csv', img_dir='/projects/bfpq/work/aberres2/demo_roman_rubin_fix/data')
-    dataset = CustomImageDatasetY(annotations_file=args.annotations_file, img_dir=args.img_dir, norm=args.data_norm)
+    # dataset = CustomImageDatasetY(annotations_file=args.annotations_file, img_dir=args.img_dir, norm=args.data_norm)
+    dataset = H5ImageDataset(h5_path=args.annotations_file, norm=args.data_norm, y_only=True)
 
     checkpoints_directory = args.checkpoints_directory
     if os.path.exists(checkpoints_directory):
@@ -61,5 +62,6 @@ def main(args):
 
 if __name__ == "__main__":
     args = init_argparse()
-    mp.set_start_method("spawn", force=True)
+    if args.num_workers > 0:
+        mp.set_start_method("spawn", force=True)
     main(args)

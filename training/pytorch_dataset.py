@@ -4,6 +4,7 @@ import numpy as np
 from torchvision.io import decode_image
 from torch.utils.data import Dataset
 import torch
+import h5py
 
 def _ZScoreNormalize(image: np.ndarray) -> np.ndarray:
     """
@@ -206,4 +207,30 @@ class CustomImageDatasetY(Dataset):
             image = self.transform(image)
         if self.target_transform:
             label = self.target_transform(label)
+        return image
+        
+class H5ImageDataset(Dataset):
+    def __init__(self, h5_path, key="images", norm=None, mult_val=None, transform=None, y_only=False):
+        with h5py.File(h5_path, "r") as f:
+            if y_only:
+                data = torch.from_numpy(f[key][:, 0])  # (N, 64, 64) float32
+                data = data.unsqueeze(1)  # Add channel dimension to make it (N, 1, 64, 64)
+            else:
+                data = torch.from_numpy(f[key][:])        # (N, 3, 64, 64) float32, ~490 MB
+        if mult_val is not None:
+            data = data * mult_val
+        if norm.lower() == "asinh":
+            data = _AsinhNormalize(data)
+        elif norm.lower() == "sum":
+            data = data / data.sum(dim=(2, 3), keepdim=True) * 64**2
+        self.data = data
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        image = self.data[idx]
+        if self.transform:
+            image = self.transform(image)
         return image
