@@ -131,8 +131,8 @@ if __name__ == "__main__":
         # out1 = normalize_center(s_median)
         # im_norm = normalize_center(fimg[6:]) # Normalize the target image (last 3 channels)
         out1 = s_median
-        # Alex's normalization method for model output images multiplied by 35^2 as half the pixels went through the forward model.
-        timg = (img/img.sum(axis=(1,2), keepdims=True))*35**2
+        # Alex's normalization method for model output images multiplied by the sum of the output images.
+        timg = (img/img.sum(axis=(1,2), keepdims=True))*(s_median.sum(axis=(1,2),keepdims=True))#*s_median[0].sum()/64**2
         if abs(out1).max() == np.inf or abs(timg).max() == np.inf:
             print('Normalization produced inf values. Skipping.')
             continue
@@ -175,16 +175,16 @@ if __name__ == "__main__":
                 for k in range(len(cols)):
                     dd1[f'pred_{cols[k]}_{bands[j]}'].append(None)
                     dd1[f'roman_{cols[k]}_{bands[j]}'].append(None)
-        # out_norm = normalize_unit(s_median)
-        # im_norm = normalize_unit(timg) # Normalize the target image (last 3 channels)
+        out_norm = normalize_unit(s_median)
+        im_norm = normalize_unit(timg) # Normalize the target image (last 3 channels)
         # save some of the model outputs REMOVE WHEN NOT TESTING
         # np.save(f'/work/hdd/bfpq/aberres2/test_eval_imgs/pred_{i}.npy',out1)
         # np.save(f'/work/hdd/bfpq/aberres2/test_eval_imgs/roman_{i}.npy',im_norm)
-        psnr_val = psnr(timg, s_median)
+        psnr_val = psnr(im_norm, out_norm)
         dd1['psnr_Y'].append(psnr_val[0])
         dd1['psnr_J'].append(psnr_val[1])
         dd1['psnr_H'].append(psnr_val[2])
-        ssim_val = struct_sim(timg, s_median)
+        ssim_val = struct_sim(im_norm, out_norm)
         dd1['ssim_Y'].append(ssim_val[0])
         dd1['ssim_J'].append(ssim_val[1])
         dd1['ssim_H'].append(ssim_val[2])
