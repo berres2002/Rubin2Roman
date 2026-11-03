@@ -54,7 +54,7 @@ def init_argparse():
     parser.add_argument('--n_samples', type=int, default=400, help='Number of samples to generate for each test image.')
     parser.add_argument('--steps', type=int, default=1000, help='Number of diffusion steps for sampling.')
     parser.add_argument('--n_test',type=int,default=50,help='Number of test galaxies to use. Can use up to the full size of the test set.')
-    parser.add_argument('--single_band', action='store_true', help='If set, evaluate only on the Y band. Otherwise, evaluate on YJH bands. Does not work on conditional model.')
+    parser.add_argument('--single_band', action=argparse.BooleanOptionalAction, help='If set, evaluate only on the Y band. Otherwise, evaluate on YJH bands. Does not work on conditional model.')
     return parser.parse_args()
 
 if __name__ == "__main__":
