@@ -25,8 +25,8 @@ import pickle
 #     std = np.std(image, axis=(1, 2), keepdims=True)
 #     return (image - mean) / std
 #cols = ['semimajor_axis','semiminor_axis','orientation','ellipticity','kron_flux']
-def columns_constructor():
-    bands = ['Y', 'J', 'H']
+def columns_constructor(bands=['Y','J','H']):
+    # bands = ['Y', 'J', 'H']
     comps = ['psnr','ssim']
     mfeat = ['flux','HLR','semimajor_axis','semiminor_axis','orientation','ellipticity','kron_flux']
     start = ['cutout_id']
@@ -41,7 +41,7 @@ def columns_constructor():
         #    'roman_a_Y', 'roman_a_J', 'roman_a_H', 'roman_b_Y', 'roman_b_J', 'roman_b_H',
         #    'lsst_flux_u','lsst_flux_g','lsst_flux_r','lsst_flux_i','lsst_flux_z','lsst_flux_y'\
         #    ]
-COLUMNS = columns_constructor()
+# COLUMNS = columns_constructor()
 
 def init_argparse():
     import argparse
@@ -54,14 +54,24 @@ def init_argparse():
     parser.add_argument('--n_samples', type=int, default=400, help='Number of samples to generate for each test image.')
     parser.add_argument('--steps', type=int, default=1000, help='Number of diffusion steps for sampling.')
     parser.add_argument('--n_test',type=int,default=50,help='Number of test galaxies to use. Can use up to the full size of the test set.')
+    parser.add_argument('--single_band', action='store_true', help='If set, evaluate only on the Y band. Otherwise, evaluate on YJH bands. Does not work on conditional model.')
     return parser.parse_args()
 
 if __name__ == "__main__":
     dt1 = datetime.now()
     args = init_argparse()
+    if args.single_band:
+        COLUMNS = columns_constructor(['Y'])
+        BANDS = ['Y']
+    else:
+        COLUMNS = columns_constructor(['Y','J','H'])
+        BANDS = ['Y','J','H']
     # checkpoints_directory = '/work/hdd/bfpq/aberres2/checkpoints/demo_cond_10k'
     dd1 = {col:[] for col in COLUMNS}
-    dd2 = {'roman':{'id':[],'Y':{"cog_profile":[],"cog_radii":[]},'J':{"cog_profile":[],"cog_radii":[]},'H':{"cog_profile":[],"cog_radii":[]}}, 'pred':{'Y':{"cog_profile":[],"cog_radii":[]},'J':{"cog_profile":[],"cog_radii":[]},'H':{"cog_profile":[],"cog_radii":[]}}}
+    if args.single_band:
+        dd2 = {'roman':{'id':[],'Y':{"cog_profile":[],"cog_radii":[]}}, 'pred':{'Y':{"cog_profile":[],"cog_radii":[]}}}
+    else:
+        dd2 = {'roman':{'id':[],'Y':{"cog_profile":[],"cog_radii":[]},'J':{"cog_profile":[],"cog_radii":[]},'H':{"cog_profile":[],"cog_radii":[]}}, 'pred':{'Y':{"cog_profile":[],"cog_radii":[]},'J':{"cog_profile":[],"cog_radii":[]},'H':{"cog_profile":[],"cog_radii":[]}}}
     checkpoints_directory = args.checkpoints_directory
     print('Loading model...')
     model = ScoreModel(checkpoints_directory=checkpoints_directory)
@@ -117,8 +127,14 @@ if __name__ == "__main__":
             # mult_val = 1/159.23617710583153
             rubin_img = np.load(rubin_paths[idx])
             rubin_var = np.load(rubin_var_paths[idx])
-            lf1 = likelihood(rubin_img, rubin_var, (args.n_samples,3,64,64), sde=model.sde, device=model.device)
-            samples=model.sample(shape=[args.n_samples,3,64,64],steps=args.steps, likelihood_score_fn=lf1.score,guidance_factor=1, verbose=0)
+            if args.single_band:
+                lf1 = likelihood(rubin_img, rubin_var, (args.n_samples,1,64,64), sde=model.sde, device=model.device)
+                out_shape = [args.n_samples,1,64,64]
+            else:
+                lf1 = likelihood(rubin_img, rubin_var, (args.n_samples,3,64,64), sde=model.sde, device=model.device)
+                out_shape = [args.n_samples,3,64,64]
+
+            samples=model.sample(shape=out_shape,steps=args.steps, likelihood_score_fn=lf1.score,guidance_factor=1, verbose=0)
             full_samp_nn = samples.cpu().numpy()#/mult_val
         s_median = np.median(full_samp_nn, axis=0)
         if s_median.max() == 0.0 or np.isnan(s_median.max()) or np.sum(s_median) == 0.0 or np.isnan(np.sum(s_median)):
@@ -132,6 +148,8 @@ if __name__ == "__main__":
         # im_norm = normalize_center(fimg[6:]) # Normalize the target image (last 3 channels)
         out1 = s_median
         # Alex's normalization method for model output images multiplied by the sum of the output images.
+        if args.single_band:
+            img = img[0,np.newaxis] # Add a new axis to make it (1, 64, 64) for single band
         timg = (img/img.sum(axis=(1,2), keepdims=True))*(s_median.sum(axis=(1,2),keepdims=True))#*s_median[0].sum()/64**2
         if abs(out1).max() == np.inf or abs(timg).max() == np.inf:
             print('Normalization produced inf values. Skipping.')
@@ -164,7 +182,7 @@ if __name__ == "__main__":
             pred_morph = None
             roman_morph = None
         cols = ['semimajor_axis','semiminor_axis','orientation','ellipticity','kron_flux']
-        bands = ['Y','J','H']
+        bands = BANDS
         if pred_morph is not None or roman_morph is not None:
             for j in range(len(bands)):
                 for k in range(len(cols)):
@@ -181,13 +199,10 @@ if __name__ == "__main__":
         # np.save(f'/work/hdd/bfpq/aberres2/test_eval_imgs/pred_{i}.npy',out1)
         # np.save(f'/work/hdd/bfpq/aberres2/test_eval_imgs/roman_{i}.npy',im_norm)
         psnr_val = psnr(im_norm, out_norm)
-        dd1['psnr_Y'].append(psnr_val[0])
-        dd1['psnr_J'].append(psnr_val[1])
-        dd1['psnr_H'].append(psnr_val[2])
         ssim_val = struct_sim(im_norm, out_norm)
-        dd1['ssim_Y'].append(ssim_val[0])
-        dd1['ssim_J'].append(ssim_val[1])
-        dd1['ssim_H'].append(ssim_val[2])
+        for j in range(len(bands)):
+            dd1[f'psnr_{bands[j]}'].append(psnr_val[j])
+            dd1[f'ssim_{bands[j]}'].append(ssim_val[j])
         # peak_local_max is index coordinates so x and y are reversed
         im_hlr,im_cp,radii = get_HLR(timg,im_cens[:,1],im_cens[:,0],return_cog=True)
         samp_hlr, samp_cp, radii = get_HLR(out1,out_cens[:,1],out_cens[:,0],return_cog=True)
@@ -196,22 +211,16 @@ if __name__ == "__main__":
             dd2['roman'][bands[i]]['cog_radii'].append(radii)
             dd2['pred'][bands[i]]['cog_profile'].append(samp_cp[i])
             dd2['pred'][bands[i]]['cog_radii'].append(radii)
-        dd1['roman_HLR_Y'].append(im_hlr[0])
-        dd1['roman_HLR_J'].append(im_hlr[1])
-        dd1['roman_HLR_H'].append(im_hlr[2])
-        dd1['pred_HLR_Y'].append(samp_hlr[0])
-        dd1['pred_HLR_J'].append(samp_hlr[1])
-        dd1['pred_HLR_H'].append(samp_hlr[2])
+        for j in range(len(bands)):
+            dd1[f'roman_HLR_{bands[j]}'].append(im_hlr[j])
+            dd1[f'pred_HLR_{bands[j]}'].append(samp_hlr[j])
         # TODO: Figure out radius for aperture photometry for flux measurement
         # Choosing a radius of 10 pixels
         im_flux,im_flux_errs = get_aperture_fluxes(timg, im_cens[:,0], im_cens[:,1], radius=5)
         samp_flux, samp_flux_errs = get_aperture_fluxes(out1, out_cens[:,0], out_cens[:,1], radius=5)
-        dd1['roman_flux_Y'].append(im_flux[0])
-        dd1['roman_flux_J'].append(im_flux[1])
-        dd1['roman_flux_H'].append(im_flux[2])
-        dd1['pred_flux_Y'].append(samp_flux[0])
-        dd1['pred_flux_J'].append(samp_flux[1])
-        dd1['pred_flux_H'].append(samp_flux[2])
+        for j in range(len(bands)):
+            dd1[f'roman_flux_{bands[j]}'].append(im_flux[j])
+            dd1[f'pred_flux_{bands[j]}'].append(samp_flux[j])
         
     data_out = pd.DataFrame(dd1)
     os.makedirs(args.output_dir, exist_ok=True)
