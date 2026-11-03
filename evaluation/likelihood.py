@@ -20,7 +20,7 @@ with open('/projects/bfpq/rubin2roman/super_samp_rubin_psf_y70.npy', 'rb') as f:
     # global gs_psf
     gs_psf = np.load(f)
 
-gs_psf = np.repeat(gs_psf[np.newaxis],3,axis=0)
+# gs_psf = np.repeat(gs_psf[np.newaxis],3,axis=0)
 
 def make_wcs(skycoord, orientation, pixels, pixel_size):
     """
@@ -269,7 +269,7 @@ fwd_model = make_forward_model(
 
 with torch.no_grad():
     # fwd_model = PhysModel(device='cuda')
-    jacobian = torch.func.jacrev(lambda a: fwd_model(a[None]).squeeze(0))(torch.ones(3,64,64,device='cuda', dtype=torch.float32))
+    jacobian = torch.func.jacrev(lambda a: fwd_model(a[None]).squeeze(0))(torch.ones(1,64,64,device='cuda', dtype=torch.float32))
     AAT = torch.sum(jacobian**2, dim=(-3,-2,-1))[None]
 # AAT = torch.sum()
 
