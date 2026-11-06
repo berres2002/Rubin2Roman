@@ -15,7 +15,7 @@ def init_argparse():
     parser.add_argument('--epochs', type=int, default=1000, help='Number of training epochs.')
     parser.add_argument('--batch_size', type=int, default=64, help='Batch size for training.')
     parser.add_argument('--learning_rate', type=float, default=1e-4, help='Learning rate for the optimizer.')
-    parser.add_argument('--num_workers', type=int, default=4, help='Number of workers for data loading.')
+    parser.add_argument('--num_workers', type=int, default=1, help='Number of workers for data loading.')
     parser.add_argument('--data_norm', type=str, default='None', choices=['None', 'Asinh', 'mult_val', 'Sum'], help='Normalization method for the data. Choose "None" for no normalization or "Asinh" for Asinh normalization.')
     parser.add_argument('--sigma_min', type=float, default=None, help='Minimum sigma value for the VE SDE.')
     parser.add_argument('--sigma_max', type=float, default=None, help='Maximum sigma value for the VE SDE.')
