@@ -36,7 +36,7 @@ def main(args):
         os.makedirs(checkpoints_directory, exist_ok=True)
     # checkpoints_directory = '/work/hdd/bfpq/aberres2/checkpoints/demo_cond_ncsnpp1'
     if args.sigma_min is not None and args.sigma_max is not None:
-        net = NCSNpp(channels=1)
+        net = NCSNpp(channels=1, ch_mult=(1,2,4))
         model = ScoreModel(model=net, sigma_min=args.sigma_min, sigma_max=args.sigma_max, device="cuda") # VE SDE
         print(f"Using VE SDE with sigma_min={args.sigma_min} and sigma_max={args.sigma_max}.")
     elif args.beta_min is not None and args.beta_max is not None:
