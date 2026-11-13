@@ -116,6 +116,7 @@ def make_forward_model(
         fiducial_center:SkyCoord=None,
         fiducial_orientation:float=None, # Pick the orientation of the first WCS, angle East of North
         sum_pool=False,
+        y_sum=1,
         **kwargs
         ):
     """
@@ -212,6 +213,7 @@ def make_forward_model(
             pi, pj = wcs_list[i].pixel_shape
             zp = zero_padding
             y = y[..., zp:pi+zp, zp:pj+zp]
+            y = (y/(64**2))*y_sum
             ys.append(y)
         return torch.concat(ys, dim=1)
     return A
@@ -255,23 +257,33 @@ hdr["PC2_1"] = PC[1, 0]
 hdr["PC2_2"] = PC[1, 1]
 w = WCS(hdr)
 
-wcs_list = [w]
-fwd_model = make_forward_model(
-        gs_psf, 
-        wcs_list, 
-        psf_super_sampling_factor=super_sampling_factor,
-        model_super_sampling_factor=model_pixels//obs_pixels,
-        model_pixels=model_pixels,
-        model_pixel_size=model_pixel_size * units.arcsec,
-        fiducial_orientation=model_angle,
-        zero_padding=zero_padding
-        )
+# wcs_list = [w]
+# fwd_model = make_forward_model(
+#         gs_psf, 
+#         wcs_list, 
+#         psf_super_sampling_factor=super_sampling_factor,
+#         model_super_sampling_factor=model_pixels//obs_pixels,
+#         model_pixels=model_pixels,
+#         model_pixel_size=model_pixel_size * units.arcsec,
+#         fiducial_orientation=model_angle,
+#         zero_padding=zero_padding
+#         )
 
-with torch.no_grad():
-    # fwd_model = PhysModel(device='cuda')
-    jacobian = torch.func.jacrev(lambda a: fwd_model(a[None]).squeeze(0))(torch.ones(1,64,64,device='cuda', dtype=torch.float32))
-    AAT = torch.sum(jacobian**2, dim=(-3,-2,-1))[None]
+# with torch.no_grad():
+#     # fwd_model = PhysModel(device='cuda')
+#     jacobian = torch.func.jacrev(lambda a: fwd_model(a[None]).squeeze(0))(torch.ones(1,64,64,device='cuda', dtype=torch.float32))
+#     AAT = torch.sum(jacobian**2, dim=(-3,-2,-1))[None]
 # AAT = torch.sum()
+A_params = dict(
+    psf=gs_psf,
+    wcs_list=[w],
+    psf_super_sampling_factor=super_sampling_factor,
+    model_super_sampling_factor=super_sampling_factor,
+    model_pixels=model_pixels,
+    model_pixel_size=model_pixel_size * units.arcsec,
+    zero_padding=zero_padding,
+    fiducial_orientation=model_angle
+)
 
 class likelihood:
     def __init__(self, rubin_im, rubin_var, x_shape, sde, device='cuda'):
@@ -283,8 +295,11 @@ class likelihood:
         y_var=y_var[:,-1][:,np.newaxis] # -1 y band
         self.y_var = torch.from_numpy(y_var)
         self.device = device
-        self.A = fwd_model
-        self.AAT = AAT
+        A_params['y_sum'] = self.y_in.sum()
+        self.A = make_forward_model(**A_params)
+        with torch.no_grad():
+            jacobian = torch.func.jacrev(lambda a: self.A(a[None]).squeeze(0))(torch.ones(C,H,W,device='cuda', dtype=torch.float32))
+            self.AAT = torch.sum(jacobian**2, dim=(-3,-2,-1))[None]
         self.sde=sde
 
 
