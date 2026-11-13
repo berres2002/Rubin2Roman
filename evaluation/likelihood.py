@@ -185,8 +185,8 @@ def make_forward_model(
         pc = wcs_list[0].pixel_scale_matrix
         fiducial_orientation = np.arctan2(pc[1, 0], pc[0, 0]) * 180 / np.pi
     fiducial_wcs = make_wcs(fiducial_center, fiducial_orientation, model_pixels, model_pixel_size)
-    print("Fiducial WCS")
-    print(fiducial_wcs)
+    # print("Fiducial WCS")
+    # print(fiducial_wcs)
     
 
     model_kernel = model_super_sampling_factor / psf_super_sampling_factor
