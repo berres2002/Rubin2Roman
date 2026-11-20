@@ -96,6 +96,8 @@ def sample(args, sample_dset, true_dset):
         if s_median.max() == 0.0 or np.isnan(s_median.max()) or np.sum(s_median) == 0.0 or np.isnan(np.sum(s_median)):
             print('Model produced empty or nan valued images')
             continue
+        if args.single_band:
+            img = img[0,np.newaxis] # Add a new axis to make it (1, 64, 64) for single band
         timg = (img/img.sum(axis=(1,2), keepdims=True))*(s_median.sum(axis=(1,2),keepdims=True))
         sample_dset[i] = s_median
         true_dset[i] = timg
